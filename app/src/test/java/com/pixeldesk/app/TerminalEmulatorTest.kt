@@ -17,8 +17,8 @@ class TerminalEmulatorTest {
     @Test
     fun positionsCursorAndOverwritesExistingCells() {
         val terminal = TerminalEmulator(3, 8)
-        terminal.feed("abcdef\u001b[2;3HZ")
-        assertEquals("abZdef", terminal.snapshot[1].take(6).joinToString("") { it.character.toString() })
+        terminal.feed("abcdef\u001b[1;3HZ")
+        assertEquals("abZdef", terminal.snapshot[0].take(6).joinToString("") { it.character.toString() })
     }
 
     @Test
