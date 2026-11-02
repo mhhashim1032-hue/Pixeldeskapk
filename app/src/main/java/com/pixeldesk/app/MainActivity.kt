@@ -382,6 +382,10 @@ private fun LibraryScreen() {
 private fun SettingsScreen() {
     val context = LocalContext.current
     val device = remember { DeviceSnapshot.read(context) }
+    val runtimeFiles = remember { ProotRuntimeProbe.locate(context) }
+    val scope = rememberCoroutineScope()
+    var runtimeMessage by remember { mutableStateOf("Run a native PRoot check to verify the bundled runtime.") }
+    var checkingRuntime by remember { mutableStateOf(false) }
     PageScaffold("Settings", "PIXEL DESK preferences and device diagnostics.") {
         FeatureCard("Privacy first", "Environment files stay on-device by default.", "LOCAL", Cyan)
         FeatureCard("No root required", "The planned basic Linux environment targets unrooted Android.", "DESIGN", Violet)
@@ -395,6 +399,34 @@ private fun SettingsScreen() {
         )
         InfoCard("TOTAL RAM", device.totalRamBytes.toReadableSize(), Modifier.fillMaxWidth())
         InfoCard("TOTAL DATA STORAGE", device.totalStorageBytes.toReadableSize(), Modifier.fillMaxWidth())
+        Text("NATIVE LINUX RUNTIME", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        FeatureCard(
+            "PRoot ARM64",
+            if (runtimeFiles != null) "Native executable and loader are present in Android's native library directory."
+            else "Native payload is missing or this device ABI is unsupported.",
+            if (runtimeFiles != null) "PAYLOAD FOUND" else "NOT AVAILABLE",
+            if (runtimeFiles != null) Cyan else Muted
+        )
+        Button(
+            onClick = {
+                scope.launch {
+                    checkingRuntime = true
+                    val result = ProotRuntimeProbe.check(context)
+                    runtimeMessage = result.message + (result.exitCode?.let { " (exit $it)" } ?: "")
+                    checkingRuntime = false
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !checkingRuntime
+        ) {
+            Text(if (checkingRuntime) "Checking native runtime…" else "Test PRoot executable")
+        }
+        Text(runtimeMessage, color = Muted, fontSize = 12.sp)
+        Text(
+            "This probe checks PRoot startup only. It does not install Linux or run desktop applications.",
+            color = Muted,
+            fontSize = 10.sp
+        )
         FeatureCard("Compatibility", "Windows and VM support will be reported per device and application.", "HONEST STATUS", Muted)
     }
 }
