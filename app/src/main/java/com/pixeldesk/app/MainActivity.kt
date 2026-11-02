@@ -259,8 +259,10 @@ private fun EnvironmentsScreen() {
                     withContext(Dispatchers.IO) {
                         val stream = context.contentResolver.openOutputStream(uri)
                             ?: error("Could not open the selected backup destination.")
-                        stream.use { output ->
-                            EnvironmentBackupExporter.export(workspaceToExport, output)
+                        EnvironmentRuntimeManager.withEnvironmentStopped(workspaceToExport.id) {
+                            stream.use { output ->
+                                EnvironmentBackupExporter.export(workspaceToExport, output)
+                            }
                         }
                     }
                 }
