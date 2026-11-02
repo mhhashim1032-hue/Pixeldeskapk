@@ -63,3 +63,6 @@ The software manager can discover installed Linux desktop application entries an
 
 
 The software manager also provides a searchable inventory of installed Debian packages, including package versions, based on dpkg's installed status.
+
+
+The application catalogue includes a safe executable-availability preflight. It checks whether a desktop entry's first executable token is present in Debian's PATH; it does not run the application or imply that GUI launch is supported.
