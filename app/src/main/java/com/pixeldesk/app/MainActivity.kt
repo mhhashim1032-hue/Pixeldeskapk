@@ -69,6 +69,7 @@ private val Muted = Color(0xFF9AA4B8)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EnvironmentRuntimeManager.resume()
         setContent { PixelDeskApp() }
     }
 
