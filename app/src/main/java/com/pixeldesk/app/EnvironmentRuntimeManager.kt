@@ -1,0 +1,42 @@
+package com.pixeldesk.app
+
+import android.content.Context
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/**
+ * Owns one PRoot shell process per environment. Screens borrow sessions; they
+ * must not close them when leaving composition.
+ */
+object EnvironmentRuntimeManager {
+    private val sessions = ConcurrentHashMap<String, ProotInteractiveSession>()
+    private val mutex = Mutex()
+
+    suspend fun start(
+        context: Context,
+        workspace: EnvironmentWorkspace
+    ): ProotInteractiveSession = mutex.withLock {
+        val existing = sessions[workspace.id]
+        if (existing?.isAlive == true) return@withLock existing
+        existing?.close()
+        sessions.remove(workspace.id)
+        ProotInteractiveSession.start(context, workspace).also { session ->
+            sessions[workspace.id] = session
+        }
+    }
+
+    suspend fun stop(environmentId: String): Boolean = mutex.withLock {
+        val session = sessions.remove(environmentId) ?: return@withLock false
+        session.close()
+        true
+    }
+
+    fun isRunning(environmentId: String): Boolean =
+        sessions[environmentId]?.isAlive == true
+
+    fun stopAll() {
+        sessions.values.forEach { it.close() }
+        sessions.clear()
+    }
+}
