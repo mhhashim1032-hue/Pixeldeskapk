@@ -129,7 +129,7 @@ internal class ProotPtySession private constructor(
                     channel.close()
                 }
             }
-            session
+            return session
         }
     }
 }
