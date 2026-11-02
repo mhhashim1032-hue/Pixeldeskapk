@@ -59,7 +59,7 @@ fun LinuxTerminalScreen() {
             try {
                 session = ProotInteractiveSession.start(context, workspace)
                 status = "CONNECTED"
-                output = "Connected to \${workspace.displayName}\nTry: uname -m"
+                output = "Connected to ${workspace.displayName}\nTry: uname -m"
             } catch (error: Exception) {
                 status = "CONNECTION ERROR"
                 output = error.message ?: "Could not start the Debian shell."
@@ -80,7 +80,7 @@ fun LinuxTerminalScreen() {
             Text("Linux Terminal", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
             Text("Persistent local Debian ARM64 shell", color = Color(0xFF9AA4B8), fontSize = 13.sp)
             Text(
-                "\${workspace?.displayName ?: "No verified Debian environment"} · $status",
+                "${workspace?.displayName ?: "No verified Debian environment"} · $status",
                 color = if (session != null) Color(0xFF67DCE8) else Color(0xFF9AA4B8),
                 fontWeight = FontWeight.SemiBold
             )
@@ -104,8 +104,8 @@ fun LinuxTerminalScreen() {
                             try {
                                 val result = activeSession.execute(submitted)
                                 val statusText = if (result.timedOut) "TIMED OUT"
-                                    else "EXIT \${result.exitCode ?: "UNKNOWN"}"
-                                val addition = "$ $submitted\n\${result.output}\n$statusText · \${result.durationMs} ms\n"
+                                    else "EXIT ${result.exitCode ?: "UNKNOWN"}"
+                                val addition = "$ $submitted\n${result.output}\n$statusText · ${result.durationMs} ms\n"
                                 output = (output + "\n" + addition).takeLast(65_536)
                                 status = if (result.sessionAlive) "CONNECTED" else "DISCONNECTED"
                                 if (!result.sessionAlive) session = null
@@ -144,7 +144,7 @@ fun LinuxTerminalScreen() {
                             output += "\nShell reconnected."
                         } catch (error: Exception) {
                             status = "CONNECTION ERROR"
-                            output += "\n\${error.message ?: "Could not reconnect."}"
+                            output += "\n${error.message ?: "Could not reconnect."}"
                         }
                     }
                 }) { Text("Reconnect shell") }
