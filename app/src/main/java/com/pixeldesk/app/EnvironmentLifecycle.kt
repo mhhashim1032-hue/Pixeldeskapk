@@ -12,7 +12,7 @@ class EnvironmentLifecycleController(
     private val runtime: EnvironmentRuntimeManager = EnvironmentRuntimeManager
 ) {
     private val mutex = Mutex()
-    private val installing = mutableSetOf<String>()
+    private val installing = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     fun state(workspace: EnvironmentWorkspace): EnvironmentState = when {
         workspace.id in installing -> EnvironmentState.INSTALLING
