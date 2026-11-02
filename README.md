@@ -66,3 +66,6 @@ The software manager also provides a searchable inventory of installed Debian pa
 
 
 The application catalogue includes a safe executable-availability preflight. It checks whether a desktop entry's first executable token is present in Debian's PATH; it does not run the application or imply that GUI launch is supported.
+
+
+Security scope and remaining validation gates are documented in [the security model](docs/SECURITY_MODEL.md). PRoot is not a VM or a security boundary against malicious Linux applications.
