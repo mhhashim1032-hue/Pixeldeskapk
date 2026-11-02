@@ -55,7 +55,7 @@ class TerminalEmulatorTest {
         val terminal = TerminalEmulator(2, 8)
         terminal.feed("primary")
         terminal.feed("\u001b[?1049halt screen\u001b[?1049l")
-        assertEquals("primary", terminal.snapshot[0].joinToString("") { it.character.toString() })
+        assertEquals("primary ", terminal.snapshot[0].joinToString("") { it.character.toString() })
     }
 
     @Test
