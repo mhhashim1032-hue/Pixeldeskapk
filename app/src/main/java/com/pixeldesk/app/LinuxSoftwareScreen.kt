@@ -55,6 +55,9 @@ fun LinuxSoftwareScreen() {
     var running by remember { mutableStateOf(false) }
     var installedApps by remember { mutableStateOf(emptyList<LinuxDesktopApp>()) }
     var discoveringApps by remember { mutableStateOf(false) }
+    var installedPackages by remember { mutableStateOf(emptyList<InstalledLinuxPackage>()) }
+    var packageFilter by rememberSaveable { mutableStateOf("") }
+    var discoveringPackages by remember { mutableStateOf(false) }
 
     LaunchedEffect(workspace) {
         if (workspace == null) {
@@ -81,6 +84,10 @@ fun LinuxSoftwareScreen() {
         }
     }
 
+
+    val visiblePackages = remember(installedPackages, packageFilter) {
+        installedPackages.filter { it.name.contains(packageFilter.trim(), ignoreCase = true) }
+    }
 
     fun runOperation(operation: PackageOperation) {
         val activeSession = session ?: return
@@ -209,6 +216,63 @@ fun LinuxSoftwareScreen() {
                 if (installedApps.size > 60) {
                     Text("Showing first 60 of ${installedApps.size} discovered entries.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
                 }
+            }
+
+            Text("INSTALLED DEBIAN PACKAGES", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = {
+                    val active = session ?: return@Button
+                    scope.launch {
+                        discoveringPackages = true
+                        running = true
+                        status = "READING PACKAGES"
+                        try {
+                            val result = LinuxPackageManager.run(active, LinuxPackageManager.installedPackagesOperation())
+                            if (result.success) {
+                                installedPackages = LinuxPackageInventory.parse(result.output)
+                                status = "PACKAGE INVENTORY READY"
+                                output = "Read ${installedPackages.size} installed Debian packages."
+                            } else {
+                                status = "PACKAGE INVENTORY FAILED"
+                                output = result.output
+                            }
+                        } catch (error: Exception) {
+                            status = "PACKAGE INVENTORY FAILED"
+                            output = error.message ?: "Could not read installed packages."
+                        } finally {
+                            discoveringPackages = false
+                            running = false
+                        }
+                    }
+                },
+                enabled = session != null && !running && !discoveringPackages,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(if (discoveringPackages) "Reading packages…" else "Refresh installed packages") }
+            if (installedPackages.isNotEmpty()) {
+                Text("${installedPackages.size} installed packages", color = Color(0xFF67DCE8), fontWeight = FontWeight.SemiBold)
+                OutlinedTextField(
+                    value = packageFilter,
+                    onValueChange = { packageFilter = it },
+                    label = { Text("Filter package list") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                visiblePackages.take(100).forEach { item ->
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .background(Color(0xFF151A28), RoundedCornerShape(10.dp))
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(item.name, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                        Text(item.version, color = Color(0xFF9AA4B8), fontSize = 10.sp)
+                    }
+                }
+                if (visiblePackages.size > 100) {
+                    Text("Showing first 100 matches.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+                }
+            } else {
+                Text("Refresh to load the installed dpkg package inventory.", color = Color(0xFF9AA4B8), fontSize = 11.sp)
             }
 
             if (session == null && workspace != null && !running) {
