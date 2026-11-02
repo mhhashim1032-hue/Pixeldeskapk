@@ -23,4 +23,5 @@ internal object LinuxPackageInventory {
             }
             .distinctBy { it.name }
             .sortedBy { it.name.lowercase() }
+            .toList()
 }
