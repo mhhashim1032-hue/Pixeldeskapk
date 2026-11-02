@@ -62,7 +62,7 @@ jobs:
         with:
           name: pixeldesk-proot-corresponding-source
           path: |
-            app/src/main/assets/third-party/proot-corresponding-source.tar.gz
+            app/src/main/assets/third-party/proot-corresponding-source.tar
             app/src/main/assets/licenses/
           if-no-files-found: error
 
