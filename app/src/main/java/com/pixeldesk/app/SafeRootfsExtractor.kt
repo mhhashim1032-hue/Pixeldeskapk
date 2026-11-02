@@ -121,7 +121,26 @@ object SafeRootfsExtractor {
                             require(expandedBytes <= limits.maxExpandedBytes) {
                                 "Archive exceeds the expanded size limit."
                             }
-                            Files.copy(source, target)
+                            FileInputStream(source.toFile()).use { input ->
+                                FileOutputStream(target.toFile()).use { output ->
+                                    val copyBuffer = ByteArray(64 * 1024)
+                                    var copied = 0L
+                                    while (true) {
+                                        cancellationCheck()
+                                        val count = input.read(copyBuffer)
+                                        if (count < 0) break
+                                        copied += count
+                                        require(copied <= linkedBytes) {
+                                            "Hard-link target changed during extraction."
+                                        }
+                                        output.write(copyBuffer, 0, count)
+                                    }
+                                    require(copied == linkedBytes) {
+                                        "Hard-link target was truncated during extraction."
+                                    }
+                                    output.fd.sync()
+                                }
+                            }
                             if (executableFiles.contains(sourceRealPath)) {
                                 target.toFile().setExecutable(true, false)
                                 executableFiles.add(target.toRealPath())
