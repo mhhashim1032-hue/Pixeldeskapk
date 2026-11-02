@@ -1,6 +1,5 @@
 package com.pixeldesk.app
 
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -35,6 +34,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -99,6 +100,8 @@ private fun PixelDeskApp() {
 
 @Composable
 private fun HomeScreen() {
+    val context = LocalContext.current
+    val device = remember { DeviceSnapshot.read(context) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -146,11 +149,15 @@ private fun HomeScreen() {
         item {
             Text("DEVICE", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                InfoCard("MODEL", Build.MODEL.ifBlank { "Unknown" }, Modifier.weight(1f))
-                InfoCard("ANDROID", "API ${Build.VERSION.SDK_INT}", Modifier.weight(1f))
+                InfoCard("DEVICE", device.model, Modifier.weight(1f))
+                InfoCard("ANDROID", device.androidVersion + " · API " + device.apiLevel, Modifier.weight(1f))
             }
         }
         item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                InfoCard("RAM AVAILABLE", device.availableRamBytes.toReadableSize(), Modifier.weight(1f))
+                InfoCard("STORAGE FREE", device.availableStorageBytes.toReadableSize(), Modifier.weight(1f))
+            }
             Text("WORKSPACES", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
             FeatureCard("Linux ARM64", "First target · local userspace", "IN DEVELOPMENT", Violet)
             FeatureCard("Windows compatibility", "Wine + CPU translation research", "EXPERIMENTAL", Cyan)
