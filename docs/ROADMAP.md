@@ -36,6 +36,8 @@
 - [ ] Verify on a physical ARM64 Android device.
 
 ## M3 — Linux graphical desktop
+- [x] Evaluate Termux:X11 integration, app/process boundaries and GPL-3.0 redistribution requirements.
+- [ ] Prototype optional external X11 backend with explicit user setup and secure shared-socket validation.
 - [ ] Evaluate Termux:X11 integration and licensing/redistribution requirements.
 - [ ] Desktop session lifecycle and display configuration.
 - [ ] Keyboard, mouse and clipboard integration.

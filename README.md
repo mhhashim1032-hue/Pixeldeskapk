@@ -49,3 +49,8 @@ No repository-wide license has been selected yet. Do not assume this repository 
 ## Native runtime status
 
 Development APK CI builds and packages a pinned Android ARM64 PRoot candidate, includes the corresponding source/build archive and license notices, and exposes a Settings diagnostic to test native startup. The Environments screen can install a pinned Debian 12 Bookworm ARM64 rootfs with SHA-256 verification, bounded extraction and ELF architecture validation. The persistent pipe shell, native PTY bridge, scoped ANSI/VT screen renderer, environment manager, APT software manager and streamed TAR.GZ backup/export are implemented. CI builds the PTY bridge from source with the pinned Android NDK; the legacy pipe shell has controlled-fixture tests. Backups include a format manifest and a SHA-256 digest of the complete compressed archive. Real PTY/PRoot-to-Debian execution, DNS resolution and package downloads on the Pixel remain unverified. No graphical desktop or Windows EXE execution is available.
+
+
+## Linux desktop integration status
+
+Termux:X11 has been evaluated as a possible optional backend. It is not bundled, and no Linux graphical desktop is currently available in PIXEL DESK. The two-app setup, GPL-3.0 licensing, Android app sandbox, PRoot shared-`/tmp` socket and external process lifecycle remain integration gates. See [desktop backend evaluation](docs/DESKTOP_BACKEND_EVALUATION.md).
