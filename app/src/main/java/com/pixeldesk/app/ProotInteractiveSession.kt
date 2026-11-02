@@ -37,6 +37,8 @@ class ProotInteractiveSession private constructor(
     private val commandMutex = Mutex()
     @Volatile private var closed = false
 
+    val isAlive: Boolean get() = !closed && process.isAlive
+
     suspend fun execute(command: String, timeoutMs: Long = DEFAULT_TIMEOUT_MS): InteractiveCommandResult =
         commandMutex.withLock {
             require(!closed && process.isAlive) { "Linux terminal session is not running." }
