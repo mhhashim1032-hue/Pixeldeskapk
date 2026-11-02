@@ -70,9 +70,9 @@ object RootfsValidator {
         val version = metadata["VERSION_ID"]?.trim('"', '\'')
             ?: error("Root filesystem os-release has no VERSION_ID.")
         require(expected.architecture == "arm64") { "This validator currently supports ARM64 only." }
-        require(id == "debian") { "Expected Debian rootfs; found ${id ?: "unknown"}." }
+        require(id == "debian") { "Expected Debian rootfs; found $id." }
         require(version == expected.release) {
-            "Expected Debian ${expected.release}; found ${version ?: "unknown"}."
+            "Expected Debian ${expected.release}; found $version."
         }
 
         val shellCandidates = listOf("usr/bin/dash", "usr/bin/bash", "bin/sh", "bin/bash")
