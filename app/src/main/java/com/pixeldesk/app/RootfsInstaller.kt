@@ -3,6 +3,8 @@ package com.pixeldesk.app
 import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Files
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class RootfsArtifact(
     val id: String,
@@ -138,7 +140,7 @@ object RootfsInstaller {
         workspace: EnvironmentWorkspace,
         artifact: RootfsArtifact = RootfsCatalog.debianBookwormArm64,
         onProgress: (downloaded: Long, total: Long?) -> Unit = { _, _ -> }
-    ): RootfsInstallResult {
+    ): RootfsInstallResult = withContext(Dispatchers.IO) {
         val workspaceRoot = workspace.directory.canonicalFile
         require(workspace.rootFilesystem.canonicalFile.parentFile == workspaceRoot &&
             !Files.isSymbolicLink(workspace.rootFilesystem.toPath())
@@ -187,7 +189,7 @@ object RootfsInstaller {
             )
             val validation = RootfsValidator.validate(rootfs, artifact)
 
-            return RootfsInstallResult(
+            RootfsInstallResult(
                 artifact = artifact,
                 validation = validation,
                 downloadBytes = download.bytesWritten,
