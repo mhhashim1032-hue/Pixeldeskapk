@@ -67,7 +67,7 @@ class ProotRuntimeProbeTest {
     private fun fakeRuntime(body: String): ProotRuntimeFiles {
         val dir = Files.createTempDirectory("proot-fake").toFile()
         val executable = File(dir, "fake-proot").apply {
-            writeText("#!/system/bin/sh\n$body\n")
+            writeText("#!/bin/sh\n$body\n")
             setExecutable(true)
         }
         val loader = File(dir, "fake-loader").apply { writeText("loader") }
