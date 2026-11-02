@@ -6,7 +6,7 @@ Initial target: ARM64 Android devices, with Google Pixel 9 Pro XL as the primary
 
 ## Linux
 
-A PRoot-based ARM64 userspace is the first target. PRoot provides userspace filesystem and execution conveniences; it is not a virtual machine and does not provide a separate Linux kernel. Some packages and services may fail due to Android kernel, namespace, syscall, init-system or background-execution differences.
+The app can install a pinned Debian 12 Bookworm ARM64 rootfs and includes a native PRoot startup probe. PRoot provides userspace filesystem and execution conveniences; it is not a virtual machine and does not provide a separate Linux kernel. Guest shell execution has not yet been verified on the target Pixel. Some packages and services may fail due to Android kernel, namespace, syscall, init-system or background-execution differences.
 
 ## Windows
 
