@@ -42,10 +42,10 @@ object EnvironmentRuntimeManager {
     }
 
     suspend fun stop(environmentId: String): Boolean = mutex.withLock {
-        val session = sessions.remove(environmentId) ?: return@withLock false
-        session.close()
+        val session = sessions.remove(environmentId)
         if (selectedId == environmentId) selectedId = null
-        true
+        session?.close()
+        session != null
     }
 
     fun select(environmentId: String) {
