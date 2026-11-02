@@ -15,7 +15,7 @@ class ProotInteractiveSessionTest {
         val session = ProotInteractiveSession.start(fixture.files, fixture.workspace)
         try {
             val first = session.execute("PIXEL_DESK_TEST=value")
-            val second = session.execute("printf '%s\\n' \"$PIXEL_DESK_TEST\"")
+            val second = session.execute("printf '%s\\n' \"\$PIXEL_DESK_TEST\"")
             assertTrue(first.sessionAlive)
             assertTrue(second.success)
             assertTrue(second.output.contains("value"))
