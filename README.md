@@ -1,27 +1,46 @@
 # PIXEL DESK
 
-Native Android desktop workspace for running compatible Linux and Windows software on ARM64 Android devices.
+**A native Android desktop workspace for running compatible Linux and Windows software on Android.**
 
-## Status
-Foundation stage. Linux ARM64 userspace is the first implementation target. Windows compatibility and full virtual machines remain experimental until tested on the Google Pixel 9 Pro XL.
+PIXEL DESK targets ARM64 Android devices, with the Google Pixel 9 Pro XL as the primary optimization and validation target.
 
-## Principles
-- Kotlin and Jetpack Compose native Android app.
-- Offline-first; no mandatory accounts, cloud runtime, paid APIs, or telemetry.
-- No root requirement for the basic Linux environment.
-- Explicit user consent for filesystem access, imported installers, and networking.
-- Verify third-party licenses before bundling or redistributing dependencies.
-- Never claim compatibility without testing on the target device.
+## Current status
 
-## Planned environments
-1. Linux ARM64 userspace and graphical desktop.
-2. Experimental Windows compatibility through Wine and suitable CPU/graphics translation.
-3. Research track for QEMU virtual machines.
+The repository now contains the native Kotlin/Jetpack Compose application shell, device information cards, project documentation, unit-test starter, and GitHub Actions build workflows.
 
-Android does not natively install Windows EXE files. Compatibility depends on CPU architecture, graphics support, system libraries, and each application's requirements. PRoot is userspace isolation, not full virtualization.
+**The current app is a foundation build.** It does not yet install Linux distributions, launch desktop sessions, run Windows executables, or create virtual machines. Those capabilities are roadmap items and will be marked complete only after implementation and testing.
+
+## Runtime roadmap
+
+1. **Linux ARM64:** local userspace environment, initially using a PRoot-based approach.
+2. **Linux GUI:** desktop session and input integration, subject to compatibility and licensing review.
+3. **Windows compatibility:** experimental Wine and CPU translation integration; application support is not guaranteed.
+4. **Virtual machines:** QEMU feasibility research; hardware acceleration must be verified on the target device.
+
+Android does not natively install Windows `.exe` files. Wine is a compatibility layer, not a Windows installation. PRoot is userspace isolation, not a separate Linux kernel or full virtual machine. Pixel 9 Pro XL uses a Mali GPU, so Adreno-specific graphics instructions cannot be assumed to work.
+
+## Build
+
+The GitHub Actions workflow installs the Android SDK and Gradle, builds a debug APK, runs unit tests and lint, and uploads artifacts.
+
+Local build commands (after installing JDK 17, Android SDK and Gradle 8.11.1):
+
+```bash
+gradle assembleDebug
+gradle testDebugUnitTest
+gradle lint
+```
 
 ## Documentation
-Architecture, roadmap, compatibility, and security documentation will be added as the project foundation is implemented.
 
-## License
-No repository-wide license has been selected. Third-party dependencies retain their own licenses.
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Compatibility and limitations](docs/COMPATIBILITY.md)
+- [Security model](docs/SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+
+## Privacy and licensing
+
+The foundation app has no network permission and requires no account or cloud runtime. Environment files are intended to remain on-device by default. Third-party components will be reviewed for license and redistribution requirements before bundling.
+
+No repository-wide license has been selected yet. Do not assume this repository grants redistribution rights for third-party components.
