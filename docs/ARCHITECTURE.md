@@ -60,3 +60,10 @@ Before a real shell is enabled, the project must:
 References:
 - PRoot-Distro project and architecture: https://github.com/termux/proot-distro
 - Termux PRoot package build metadata and dependencies: https://github.com/termux/termux-packages/tree/master/packages/proot
+
+
+## Safe rootfs archive extraction
+
+`SafeRootfsExtractor` supports gzip-compressed TAR archives and extracts into a fresh staging directory before promotion. It enforces configurable entry-count, total expanded-size and per-file limits; rejects absolute archive paths, parent traversal, duplicate paths, hard links and special filesystem nodes; and validates symbolic-link targets remain inside the rootfs. Absolute Linux symlinks are rewritten as equivalent relative links rooted inside the extraction directory, so common paths such as `/bin` do not become host-absolute Android paths. File ownership and privileged mode bits are not restored.
+
+The initial implementation deliberately rejects hard links and device nodes. This may exclude some distribution archives; the installer must select and test a compatible rootfs artifact rather than silently weakening these checks. Extraction is not yet connected to the UI or a distribution catalog.
