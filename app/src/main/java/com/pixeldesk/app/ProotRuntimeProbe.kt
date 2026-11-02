@@ -55,7 +55,7 @@ object ProotRuntimeProbe {
                 false,
                 "The native PRoot payload is missing or not executable in Android nativeLibraryDir."
             )
-        return execute(files, listOf("--version"), timeoutMs)
+        return execute(files, listOf("-V"), timeoutMs)
     }
 
     internal suspend fun execute(
