@@ -21,7 +21,7 @@ Android does not natively install Windows `.exe` files. Wine is a compatibility 
 
 ## Build
 
-The GitHub Actions workflow installs the Android SDK and Gradle, builds a debug APK, runs unit tests and lint, and uploads artifacts.
+The GitHub Actions workflow installs the Android SDK and Gradle, builds a debug APK, runs unit tests and lint, verifies the debug signature and ARM64 PTY library, and uploads an installable candidate with a build manifest and SHA-256. This is a development artifact, not a production release.
 
 Local build commands (after installing JDK 17, Android SDK and Gradle 8.11.1):
 
@@ -69,3 +69,8 @@ The application catalogue includes a safe executable-availability preflight. It 
 
 
 Security scope and remaining validation gates are documented in [the security model](docs/SECURITY_MODEL.md). PRoot is not a VM or a security boundary against malicious Linux applications.
+
+
+## Release-candidate instructions
+
+See [the release checklist](docs/RELEASE_CHECKLIST.md) for downloading the installable CI debug APK, verifying its checksum, installing it on Android and the remaining production-release gates.
