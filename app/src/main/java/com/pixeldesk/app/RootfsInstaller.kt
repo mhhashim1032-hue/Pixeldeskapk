@@ -63,7 +63,9 @@ object RootfsValidator {
         val root = rootfs.canonicalFile.toPath()
 
         val osRelease = File(rootfs, "etc/os-release")
-        require(osRelease.isFile && osRelease.canRead()) { "Root filesystem is missing /etc/os-release." }
+        require(osRelease.isFile && osRelease.canRead() &&
+            osRelease.canonicalFile.toPath().startsWith(root)
+        ) { "Root filesystem is missing or has an unsafe /etc/os-release." }
         val metadata = parseOsRelease(osRelease.readLines())
         val id = metadata["ID"]?.trim('"', '\'')?.lowercase()
             ?: error("Root filesystem os-release has no ID.")
@@ -85,8 +87,9 @@ object RootfsValidator {
         require(shell.startsWith(root)) { "Root filesystem shell resolves outside the rootfs." }
         verifyAarch64Elf(shell.toFile())
 
-        require(File(rootfs, "usr/bin/dpkg").isFile) {
-            "Debian package manager is missing from the root filesystem."
+        val dpkg = File(rootfs, "usr/bin/dpkg")
+        require(dpkg.isFile && dpkg.canonicalFile.toPath().startsWith(root)) {
+            "Debian package manager is missing or unsafe in the root filesystem."
         }
 
         return RootfsValidation(
