@@ -195,7 +195,7 @@ fun LinuxTerminalScreen() {
                     .onSizeChanged { size ->
                         val widthDp = with(density) { size.width.toDp().value }
                         val columns = (widthDp / 7.2f).toInt().coerceIn(20, 180)
-                        terminal.resize(rows = 24, columns = columns)
+                        terminal.resize(newRows = 24, newColumns = columns)
                         session?.resize(rows = 24, columns = columns)
                         terminalRows = terminal.snapshot
                     }
