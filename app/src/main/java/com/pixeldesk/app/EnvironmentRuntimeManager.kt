@@ -13,6 +13,7 @@ object EnvironmentRuntimeManager {
     private val sessions = ConcurrentHashMap<String, ProotInteractiveSession>()
     private val mutex = Mutex()
     @Volatile private var shuttingDown = false
+    @Volatile private var selectedId: String? = null
 
     fun resume() {
         shuttingDown = false
@@ -33,14 +34,22 @@ object EnvironmentRuntimeManager {
                 error("PIXEL DESK shut down while the environment was starting.")
             }
             sessions[workspace.id] = session
+            selectedId = workspace.id
         }
     }
 
     suspend fun stop(environmentId: String): Boolean = mutex.withLock {
         val session = sessions.remove(environmentId) ?: return@withLock false
         session.close()
+        if (selectedId == environmentId) selectedId = null
         true
     }
+
+    fun select(environmentId: String) {
+        selectedId = environmentId
+    }
+
+    fun selectedEnvironmentId(): String? = selectedId
 
     fun isRunning(environmentId: String): Boolean =
         sessions[environmentId]?.isAlive == true
