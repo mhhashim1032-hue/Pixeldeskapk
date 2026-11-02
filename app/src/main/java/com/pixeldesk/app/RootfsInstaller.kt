@@ -4,6 +4,8 @@ import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Files
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 data class RootfsArtifact(
@@ -144,6 +146,7 @@ object RootfsInstaller {
         artifact: RootfsArtifact = RootfsCatalog.debianBookwormArm64,
         onProgress: (downloaded: Long, total: Long?) -> Unit = { _, _ -> }
     ): RootfsInstallResult = withContext(Dispatchers.IO) {
+        val coroutineContext = currentCoroutineContext()
         val workspaceRoot = workspace.directory.canonicalFile
         require(workspace.rootFilesystem.canonicalFile.parentFile == workspaceRoot &&
             !Files.isSymbolicLink(workspace.rootFilesystem.toPath())
@@ -188,7 +191,8 @@ object RootfsInstaller {
                 limits = RootfsExtractionLimits(
                     maxExpandedBytes = artifact.maxExpandedBytes,
                     maxSingleFileBytes = 512L * 1024 * 1024
-                )
+                ),
+                cancellationCheck = { coroutineContext.ensureActive() }
             )
             val validation = RootfsValidator.validate(rootfs, artifact)
 
