@@ -90,6 +90,49 @@ class SafeRootfsExtractorTest {
         }
     }
 
+
+    @Test
+    fun materializesHardLinksAsIndependentCopies() {
+        val base = Files.createTempDirectory("pixeldesk-rootfs-hardlink").toFile()
+        try {
+            val archive = createArchive(base, listOf(
+                Entry("usr/lib/libsample.so", "library".toByteArray()),
+                Entry("usr/lib/libsample.so.1", link = "/usr/lib/libsample.so", type = TarArchiveEntry.LF_LINK)
+            ))
+            val destination = File(base, "rootfs")
+
+            val result = SafeRootfsExtractor.extractTarGz(archive, destination)
+            val original = File(destination, "usr/lib/libsample.so").toPath()
+            val copy = File(destination, "usr/lib/libsample.so.1").toPath()
+
+            assertEquals(2, result.entriesExtracted)
+            assertEquals("library", copy.toFile().readText())
+            assertFalse(Files.isSameFile(original, copy))
+        } finally {
+            base.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectsHardLinkTraversalTargets() {
+        val base = Files.createTempDirectory("pixeldesk-rootfs-hardlink-traversal").toFile()
+        try {
+            val archive = createArchive(base, listOf(
+                Entry("safe.txt", "safe".toByteArray()),
+                Entry("escape.txt", link = "../outside.txt", type = TarArchiveEntry.LF_LINK)
+            ))
+            val destination = File(base, "rootfs")
+
+            runCatching { SafeRootfsExtractor.extractTarGz(archive, destination) }
+                .onSuccess { error("Hard-link traversal should have been rejected.") }
+
+            assertFalse(destination.exists())
+            assertFalse(File(base, "outside.txt").exists())
+        } finally {
+            base.deleteRecursively()
+        }
+    }
+
     private data class Entry(
         val name: String,
         val bytes: ByteArray = byteArrayOf(),
