@@ -174,3 +174,8 @@ The application catalogue can extract the first executable token from a desktop-
 ## Security model
 
 The current threat model and release gates are documented in `docs/SECURITY_MODEL.md`. PRoot remains a userspace compatibility layer, not a VM or security boundary against malicious Linux code. Native PTY JNI validates absolute executable paths, bounds arrays and transfers, and validates environment keys. Desktop-entry Exec metadata is never evaluated; preflight invokes only a quoted command-availability check.
+
+
+## Release candidate artifacts
+
+Android CI packages a debug-signed ARM64 APK only after verifying the APK signature and the presence of `libpixeldeskpty.so`. The artifact includes a manifest with source commit, app version, minimum API, ABI, size and SHA-256. The artifact is intended for development/device testing; it is not a production-signed release. See `docs/RELEASE_CHECKLIST.md`.
