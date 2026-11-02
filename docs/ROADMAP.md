@@ -13,6 +13,8 @@
 
 ## M2 — Linux ARM64 environment
 - [ ] Select and document a maintainable PRoot distribution bootstrap strategy.
+- [x] Add bounded, staged TAR.GZ extraction with path and symlink checks.
+- [ ] Add a pinned rootfs catalog and verify a real distribution archive end-to-end.
 - [ ] Implement download integrity verification and resumable downloads.
 - [ ] Implement environment lifecycle: create, start, stop, delete.
 - [ ] Implement safe local storage layout and backup/export.
