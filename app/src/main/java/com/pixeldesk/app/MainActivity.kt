@@ -83,9 +83,10 @@ private fun PixelDeskApp() {
                     val items = listOf(
                         Triple("Home", Icons.Rounded.Home, 0),
                         Triple("Environments", Icons.Rounded.Computer, 1),
-                        Triple("Library", Icons.Rounded.Apps, 2),
+                        Triple("Files", Icons.Rounded.Folder, 2),
                         Triple("Terminal", Icons.Rounded.Computer, 3),
-                        Triple("Settings", Icons.Rounded.Settings, 4)
+                        Triple("Apps", Icons.Rounded.Apps, 4),
+                        Triple("Settings", Icons.Rounded.Settings, 5)
                     )
                     items.forEach { (label, icon, index) ->
                         NavigationBarItem(
@@ -104,6 +105,7 @@ private fun PixelDeskApp() {
                     1 -> EnvironmentsScreen()
                     2 -> LibraryScreen()
                     3 -> LinuxTerminalScreen()
+                    4 -> LinuxSoftwareScreen()
                     else -> SettingsScreen()
                 }
             }
