@@ -15,6 +15,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.Base64
+import java.util.Date
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.archivers.tar.TarConstants
@@ -88,7 +89,7 @@ object EnvironmentBackupExporter {
             val name = archivePath(path).removeSuffix("/") + "/"
             val entry = TarArchiveEntry(name, TarConstants.LF_DIR)
             entry.mode = 493 // 0755
-            entry.modTime = attributes.lastModifiedTime().toMillis()
+            entry.modTime = Date(attributes.lastModifiedTime().toMillis())
             archive.putArchiveEntry(entry)
             archive.closeArchiveEntry()
         }
@@ -106,7 +107,7 @@ object EnvironmentBackupExporter {
             val entry = TarArchiveEntry(archivePath(path), TarConstants.LF_SYMLINK)
             entry.linkName = target
             entry.mode = 511 // 0777
-            entry.modTime = attributes.lastModifiedTime().toMillis()
+            entry.modTime = Date(attributes.lastModifiedTime().toMillis())
             archive.putArchiveEntry(entry)
             archive.closeArchiveEntry()
         }
@@ -124,7 +125,7 @@ object EnvironmentBackupExporter {
             val entry = TarArchiveEntry(archivePath(path), TarConstants.LF_NORMAL)
             entry.size = declaredSize
             entry.mode = if (Files.isExecutable(path)) 493 else 420 // 0755 or 0644
-            entry.modTime = attributes.lastModifiedTime().toMillis()
+            entry.modTime = Date(attributes.lastModifiedTime().toMillis())
             archive.putArchiveEntry(entry)
 
             var copied = 0L
