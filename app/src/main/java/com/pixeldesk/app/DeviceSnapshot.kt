@@ -13,8 +13,11 @@ data class DeviceSnapshot(
     val totalRamBytes: Long,
     val availableRamBytes: Long,
     val totalStorageBytes: Long,
-    val availableStorageBytes: Long
+    val availableStorageBytes: Long,
+    val supportedAbis: List<String>
 ) {
+    val supportsArm64: Boolean get() = supportedAbis.any { it == "arm64-v8a" }
+    val primaryAbi: String get() = supportedAbis.firstOrNull() ?: "Unknown"
     companion object {
         fun read(context: Context): DeviceSnapshot {
             val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -27,7 +30,8 @@ data class DeviceSnapshot(
                 totalRamBytes = memoryInfo.totalMem,
                 availableRamBytes = memoryInfo.availMem,
                 totalStorageBytes = statFs.totalBytes,
-                availableStorageBytes = statFs.availableBytes
+                availableStorageBytes = statFs.availableBytes,
+                supportedAbis = Build.SUPPORTED_ABIS.toList()
             )
         }
     }
