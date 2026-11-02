@@ -1,4 +1,6 @@
 #include <jni.h>
+#include <algorithm>
+#include <utility>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
