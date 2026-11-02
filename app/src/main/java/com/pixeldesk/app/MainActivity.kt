@@ -262,9 +262,7 @@ private fun EnvironmentsScreen() {
         }
         Text(message, color = Muted, fontSize = 12.sp)
         workspaces.forEach { workspace ->
-            val validation = remember(workspace) {
-                runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.getOrNull()
-            }
+            val validation = runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.getOrNull()
             FeatureCard(
                 workspace.displayName,
                 if (validation != null) "Debian ${validation.release} ${validation.architecture} root filesystem is installed."
