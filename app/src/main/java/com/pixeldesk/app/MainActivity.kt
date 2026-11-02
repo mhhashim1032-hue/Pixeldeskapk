@@ -70,6 +70,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent { PixelDeskApp() }
     }
+
+    override fun onDestroy() {
+        EnvironmentRuntimeManager.stopAll()
+        super.onDestroy()
+    }
 }
 
 @Composable
