@@ -81,6 +81,7 @@ class ProotCommandRunnerTest {
             runCatching {
                 ProotCommandRunner.run(fixture.files, fixture.workspace, "   ", 2_000)
             }.onSuccess { error("Blank commands must be rejected.") }
+            Unit
         } finally {
             fixture.root.deleteRecursively()
         }
