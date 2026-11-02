@@ -72,7 +72,7 @@ object WorkspaceFiles {
     private fun resolve(root: File, relativePath: String): File {
         val canonicalRoot = root.canonicalFile
         check(canonicalRoot.exists() && canonicalRoot.isDirectory) { "Workspace root is unavailable." }
-        require(!relativePath.contains('\\u0000')) { "Invalid path." }
+        require(relativePath.indexOf(0.toChar()) < 0) { "Invalid path." }
         val target = if (relativePath.isBlank()) canonicalRoot else File(canonicalRoot, relativePath)
         val canonicalTarget = target.canonicalFile
         val rootPath = canonicalRoot.path
@@ -86,7 +86,7 @@ object WorkspaceFiles {
     private fun validateName(name: String) {
         require(name.isNotBlank() && name != "." && name != "..") { "Enter a valid name." }
         require(name.length <= 100 && !name.contains('/') && !name.contains('\\') &&
-            !name.contains('\\u0000')) { "Names cannot contain path separators." }
+            name.indexOf(0.toChar()) < 0) { "Names cannot contain path separators." }
     }
 
     private fun join(parent: String, name: String): String =
