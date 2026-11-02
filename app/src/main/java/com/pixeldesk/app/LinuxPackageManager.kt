@@ -32,16 +32,16 @@ object LinuxPackageManager {
     fun installOperation(input: String): PackageOperation {
         val names = parsePackageNames(input)
         return PackageOperation(
-            title = "Install \${names.joinToString()}",
-            command = "DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install -- \${names.joinToString(" ")}"
+            title = "Install ${names.joinToString()}",
+            command = "DEBIAN_FRONTEND=noninteractive apt-get -y --no-install-recommends install -- ${names.joinToString(" ")}"
         )
     }
 
     fun removeOperation(input: String): PackageOperation {
         val names = parsePackageNames(input)
         return PackageOperation(
-            title = "Remove \${names.joinToString()}",
-            command = "DEBIAN_FRONTEND=noninteractive apt-get -y remove -- \${names.joinToString(" ")}"
+            title = "Remove ${names.joinToString()}",
+            command = "DEBIAN_FRONTEND=noninteractive apt-get -y remove -- ${names.joinToString(" ")}"
         )
     }
 
