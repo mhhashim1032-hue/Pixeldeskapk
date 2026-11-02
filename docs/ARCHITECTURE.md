@@ -149,3 +149,8 @@ This is a deliberately scoped VT subset, not a full xterm implementation. OSC me
 ## Linux graphical desktop decision
 
 The initial backend review is recorded in `docs/DESKTOP_BACKEND_EVALUATION.md`. Termux:X11 is a plausible optional external X server, but it requires both its Android app and companion Termux package. Its documented PRoot workflow depends on a shared temporary/socket path; PIXEL DESK's current app-private `/tmp` is not shared with Termux. The upstream project is GPL-3.0, so bundling or redistribution is blocked until the product license and corresponding-source obligations are reviewed. The next step is a sandbox-safe external-backend prototype, not embedding a copied APK or hardcoding the upstream loader signature.
+
+
+## External desktop package diagnostics
+
+Settings can detect the separately installed Android packages `com.termux` and `com.termux.x11` through Android package visibility queries. This is informational only: detecting both APKs does not verify the Termux companion package, a usable X11 socket, a signature-checked server launch path, or PRoot access to that socket. The app therefore does not launch a desktop session from this screen. Setup links open the official upstream release page only after an explicit user tap.
