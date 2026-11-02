@@ -17,7 +17,7 @@
 
 ## Initial implementation
 
-The app now downloads, verifies and extracts a pinned Debian 12 Bookworm ARM64 rootfs into app-private storage, and packages a native PRoot candidate with a startup/version probe. It does not yet launch a guest shell or desktop session, execute EXE files, or create virtual machines.
+The app downloads, verifies and extracts a pinned Debian 12 Bookworm ARM64 rootfs into app-private storage, packages a native PRoot candidate, and provides a bounded command runner plus a persistent non-PTY shell adapter. The terminal adapter preserves shell state between commands and bounds output and command duration. CI tests use a controlled shell fixture; real PRoot execution against the Debian rootfs on a physical Pixel remains a required validation gate. No graphical desktop, Windows EXE execution or VM is implemented.
 
 ## Design constraints
 
@@ -97,3 +97,16 @@ The APK build pipeline and PRoot source archive must remain paired for redistrib
 `RootfsCatalog` pins the Debian 12 Bookworm ARM64 OCI rootfs layer from a fixed `debuerreotype/docker-debian-artifacts` commit. `RootfsInstaller` downloads it through `VerifiedDownloader`, checks the pinned SHA-256, extracts it with bounded TAR.GZ handling, and validates `/etc/os-release`, `usr/bin/dpkg` and the ELF64 AArch64 machine type of a POSIX shell before reporting the rootfs installed.
 
 The installer runs on `Dispatchers.IO`, refuses to overwrite a non-empty rootfs, removes partial installations on failure/cancellation, and deletes the downloaded archive after installation. It does not yet launch a command in the guest rootfs.
+
+
+## Persistent shell adapter
+
+`ProotInteractiveSession` starts the validated guest shell through the native PRoot executable and keeps one process alive for sequential commands. It serializes commands, appends a unique exit-status marker, captures merged output with a fixed retained-output ceiling, and closes the session on timeout or cancellation. The adapter uses pipes rather than a PTY: terminal control sequences, full-screen applications, job control and true SIGINT delivery are not supported yet.
+
+The terminal screen owns the session lifecycle, records a bounded recent-command history, and exposes reconnect and stop controls. A session is closed when the screen leaves composition.
+
+## Network and package management
+
+Android's `INTERNET` permission is used for rootfs and package downloads. `ACCESS_NETWORK_STATE` allows the app to read DNS servers from the active Android network and generate `/etc/resolv.conf` inside the app-private Debian rootfs. DNS configuration does not upload those addresses.
+
+APT operations are built from a strict allowlist-style package-name validator; user-entered shell fragments are never interpolated into package commands. Package installation still executes Debian package maintainer scripts in the PRoot environment, so packages and repositories remain untrusted inputs and PRoot must not be described as a hardened sandbox.
