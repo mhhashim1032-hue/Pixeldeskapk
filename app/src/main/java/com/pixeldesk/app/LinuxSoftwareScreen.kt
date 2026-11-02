@@ -58,6 +58,8 @@ fun LinuxSoftwareScreen() {
     var installedPackages by remember { mutableStateOf(emptyList<InstalledLinuxPackage>()) }
     var packageFilter by rememberSaveable { mutableStateOf("") }
     var discoveringPackages by remember { mutableStateOf(false) }
+    var appAvailability by remember { mutableStateOf(emptyMap<String, Boolean>()) }
+    var checkingCompatibility by remember { mutableStateOf(false) }
 
     LaunchedEffect(workspace) {
         if (workspace == null) {
@@ -206,8 +208,15 @@ fun LinuxSoftwareScreen() {
                     ) {
                         Text(app.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Text(app.executable, color = Color(0xFF9AA4B8), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                        val token = LinuxAppPreflight.executableToken(app.executable)
+                        val available = token?.let { appAvailability[it] }
                         Text(
-                            if (app.terminal) "Terminal application · launch unavailable" else "Desktop application · launch unavailable",
+                            when {
+                                token == null -> "Exec command unsupported for safe preflight"
+                                available == true -> "Executable found · GUI launch still unavailable"
+                                available == false -> "Executable not found in Debian PATH"
+                                else -> if (app.terminal) "Terminal application · not checked" else "Desktop application · not checked"
+                            },
                             color = Color(0xFF67DCE8),
                             fontSize = 9.sp
                         )
@@ -216,6 +225,47 @@ fun LinuxSoftwareScreen() {
                 if (installedApps.size > 60) {
                     Text("Showing first 60 of ${installedApps.size} discovered entries.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
                 }
+            }
+
+            if (installedApps.isNotEmpty()) {
+                Button(
+                    onClick = {
+                        val active = session ?: return@Button
+                        val command = runCatching { LinuxAppPreflight.buildProbeCommand(installedApps) }
+                            .getOrElse {
+                                output = it.message ?: "No safe executable commands to check."
+                                status = "PREFLIGHT UNAVAILABLE"
+                                return@Button
+                            }
+                        scope.launch {
+                            checkingCompatibility = true
+                            running = true
+                            status = "CHECKING EXECUTABLES"
+                            try {
+                                val result = LinuxPackageManager.run(
+                                    active,
+                                    PackageOperation("Check application executable availability", command, 60_000L)
+                                )
+                                if (result.success) {
+                                    appAvailability = LinuxAppPreflight.parseProbeResults(result.output)
+                                    status = "EXECUTABLE CHECK COMPLETE"
+                                    output = "Checked ${appAvailability.size} desktop executable commands. This does not test GUI startup."
+                                } else {
+                                    status = "EXECUTABLE CHECK FAILED"
+                                    output = result.output
+                                }
+                            } catch (error: Exception) {
+                                status = "EXECUTABLE CHECK FAILED"
+                                output = error.message ?: "Could not check application executables."
+                            } finally {
+                                checkingCompatibility = false
+                                running = false
+                            }
+                        }
+                    },
+                    enabled = session != null && !running && !checkingCompatibility,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(if (checkingCompatibility) "Checking…" else "Check executable availability") }
             }
 
             Text("INSTALLED DEBIAN PACKAGES", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)

@@ -50,7 +50,8 @@
 - [x] Add installed desktop-entry discovery and a filtered application inventory in the software manager.
 - [x] Add searchable installed dpkg package inventory, filtered to packages with installed status.
 - [ ] Application discovery and launch.
-- [ ] Per-app compatibility metadata and logs.
+- [x] Add a safe executable-availability preflight for desktop entries without running the application command.
+- [ ] Per-app runtime compatibility metadata and logs.
 
 ## M5 — Windows compatibility research
 - [ ] Evaluate Wine and Box64 integration feasibility on Tensor G4 / Mali.

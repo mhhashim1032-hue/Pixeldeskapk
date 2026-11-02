@@ -164,3 +164,8 @@ The software manager scans standard Debian desktop-entry locations (`/usr/share/
 ## Installed package inventory
 
 The software manager runs a read-only `dpkg-query` inventory and parses package name, version and dpkg status. Only rows whose status is exactly `installed` are shown; malformed rows and config-files-only packages are excluded. The UI provides a local name filter and caps the rendered list to 100 rows. This is separate from the desktop-entry application catalogue.
+
+
+## Desktop application executable preflight
+
+The application catalogue can extract the first executable token from a desktop-entry `Exec` field using a small quote/escape-aware tokenizer. Tokens containing shell metacharacters, field codes, whitespace or path traversal are rejected. For accepted tokens, PIXEL DESK runs only a quoted `command -v` availability check inside Debian; it never evaluates the full desktop `Exec` string and never launches the application. Results distinguish command availability from GUI launchability. A found executable does not imply that display, graphics, input or application dependencies are working.
