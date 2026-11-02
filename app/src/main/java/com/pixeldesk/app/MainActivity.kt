@@ -84,7 +84,8 @@ private fun PixelDeskApp() {
                         Triple("Home", Icons.Rounded.Home, 0),
                         Triple("Environments", Icons.Rounded.Computer, 1),
                         Triple("Library", Icons.Rounded.Apps, 2),
-                        Triple("Settings", Icons.Rounded.Settings, 3)
+                        Triple("Terminal", Icons.Rounded.Computer, 3),
+                        Triple("Settings", Icons.Rounded.Settings, 4)
                     )
                     items.forEach { (label, icon, index) ->
                         NavigationBarItem(
@@ -102,6 +103,7 @@ private fun PixelDeskApp() {
                     0 -> HomeScreen()
                     1 -> EnvironmentsScreen()
                     2 -> LibraryScreen()
+                    3 -> LinuxTerminalScreen()
                     else -> SettingsScreen()
                 }
             }
