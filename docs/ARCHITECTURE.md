@@ -169,3 +169,8 @@ The software manager runs a read-only `dpkg-query` inventory and parses package 
 ## Desktop application executable preflight
 
 The application catalogue can extract the first executable token from a desktop-entry `Exec` field using a small quote/escape-aware tokenizer. Tokens containing shell metacharacters, field codes, whitespace or path traversal are rejected. For accepted tokens, PIXEL DESK runs only a quoted `command -v` availability check inside Debian; it never evaluates the full desktop `Exec` string and never launches the application. Results distinguish command availability from GUI launchability. A found executable does not imply that display, graphics, input or application dependencies are working.
+
+
+## Security model
+
+The current threat model and release gates are documented in `docs/SECURITY_MODEL.md`. PRoot remains a userspace compatibility layer, not a VM or security boundary against malicious Linux code. Native PTY JNI validates absolute executable paths, bounds arrays and transfers, and validates environment keys. Desktop-entry Exec metadata is never evaluated; preflight invokes only a quoted command-availability check.
