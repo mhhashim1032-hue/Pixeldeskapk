@@ -1,0 +1,85 @@
+name: Installable APK candidate
+
+on:
+  push:
+    branches: [feature/release-candidate-workflow]
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "Optional notes for this development APK candidate"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0 ndk;28.2.13676358
+
+      - name: Prepare native PRoot and PTY payloads
+        run: bash scripts/prepare-proot-native.sh
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build, test and lint
+        run: gradle --no-daemon assembleDebug testDebugUnitTest lint
+
+      - name: Verify APK contents and calculate checksum
+        shell: bash
+        env:
+          CANDIDATE_NOTES: ${{ inputs.notes }}
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep -q "package: name='com.pixeldesk.app'"
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libpixeldeskpty.so'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libproot.so'
+          unzip -l "$APK" | grep -q 'lib/arm64-v8a/libproot_loader.so'
+          sha256sum "$APK" | tee "$APK.sha256"
+          {
+            echo "# PIXEL DESK installable development APK"
+            echo
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Package: com.pixeldesk.app"
+            echo "- Variant: debug (debug signing key; not a production release)"
+            echo "- ABI payload: ARM64 PRoot and POSIX PTY"
+            echo "- Workflow notes: $CANDIDATE_NOTES"
+            echo
+            echo "This APK is intended for sideload testing. Physical-device compatibility and production signing remain separate release gates."
+          } > app/build/outputs/apk/debug/release-notes.txt
+
+      - name: Upload installable APK candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixeldesk-installable-debug-candidate
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+            app/build/outputs/apk/debug/release-notes.txt
+          if-no-files-found: error
+          retention-days: 30
