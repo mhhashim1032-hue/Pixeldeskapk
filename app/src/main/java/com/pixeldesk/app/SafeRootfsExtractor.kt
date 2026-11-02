@@ -71,6 +71,10 @@ object SafeRootfsExtractor {
                         "Archive contains too many entries."
                     }
 
+                    if (entry.name == "." || entry.name == "./") {
+                        require(entry.isDirectory) { "Archive root entry must be a directory." }
+                        continue
+                    }
                     val target = resolveEntry(root, entry.name)
                     ensureSafeParent(root, target)
                     require(!Files.exists(target, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
@@ -85,13 +89,17 @@ object SafeRootfsExtractor {
                         entry.isSymbolicLink -> {
                             require(entry.size == 0L) { "Symbolic link entry has unexpected data." }
                             val linkText = entry.linkName
-                            val linkPath = Paths.get(linkText)
-                            require(!linkPath.isAbsolute) { "Absolute symbolic links are not allowed." }
-                            val resolvedLink = target.parent.resolve(linkPath).normalize()
+                            val suppliedLink = Paths.get(linkText)
+                            val resolvedLink = if (suppliedLink.isAbsolute) {
+                                root.resolve(suppliedLink.toString().trimStart('/')).normalize()
+                            } else {
+                                target.parent.resolve(suppliedLink).normalize()
+                            }
                             require(resolvedLink.startsWith(root)) {
                                 "Archive contains a symbolic link outside the root filesystem."
                             }
-                            Files.createSymbolicLink(target, linkPath)
+                            val safeLink = target.parent.relativize(resolvedLink)
+                            Files.createSymbolicLink(target, safeLink)
                         }
                         entry.isLink -> error("Hard links are not supported in rootfs archives.")
                         entry.isCharacterDevice || entry.isBlockDevice || entry.isFIFO ->
