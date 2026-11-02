@@ -135,6 +135,8 @@ class ProotInteractiveSession private constructor(
 
         suspend fun start(context: Context, workspace: EnvironmentWorkspace): ProotInteractiveSession =
             withContext(Dispatchers.IO) {
+                // Best-effort DNS setup keeps the guest's resolver aligned with Android's active network.
+                AndroidDnsConfigurator.configure(context, workspace.rootFilesystem)
                 val files = ProotRuntimeProbe.locate(context)
                     ?: error("The native ARM64 PRoot runtime is unavailable.")
                 start(files, workspace)
