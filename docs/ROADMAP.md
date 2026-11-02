@@ -7,7 +7,7 @@
 
 ## M1 — Native Android shell
 - [x] Kotlin + Jetpack Compose application.
-- [x] Home, Environments, Library, Settings navigation.
+- [x] Home, Environments, Files, Terminal, Apps and Settings navigation.
 - [x] Honest environment status labels.
 - [ ] Add automated UI smoke tests.
 
@@ -23,6 +23,12 @@
 - [x] Implement download integrity verification (resumable downloads remain open).
 - [ ] Implement environment lifecycle: create, start, stop, delete.
 - [x] Add native PRoot startup/version probe with timeout and bounded output.
+- [x] Add bounded non-interactive PRoot command execution with exit code, stdout/stderr, timeout and cancellation handling.
+- [x] Add a persistent non-PTY shell with command history, reconnect and lifecycle cleanup.
+- [ ] Validate the persistent shell against the real Debian rootfs on a physical Pixel.
+- [ ] Add a real PTY for terminal control sequences, Ctrl+C and full-screen applications.
+- [ ] Configure guest DNS from Android active-network DNS servers.
+- [ ] Add safe APT update, install, remove and cache-clean operations.
 - [x] Implement safe app-private workspace storage layout.
 - [ ] Implement environment backup/export.
 - [ ] Verify on a physical ARM64 Android device.
@@ -35,6 +41,7 @@
 
 ## M4 — Application library
 - [ ] Package install/uninstall flows within managed Linux environment.
+- [ ] Add package inventory and installed-app discovery.
 - [ ] Application discovery and launch.
 - [ ] Per-app compatibility metadata and logs.
 
@@ -51,7 +58,8 @@
 
 ## M7 — Security, QA and releases
 - [ ] Threat model and dependency/license inventory.
-- [x] Unit tests for workspace, import, downloader and rootfs extraction.
+- [x] Unit tests for workspace, import, downloader, rootfs extraction, command runner and persistent shell fixtures.
+- [ ] Physical-device integration tests for PRoot, DNS and APT.
 - [ ] Integration and UI tests.
 - [x] CI debug APK artifacts.
 - [ ] Signed release workflow after signing secrets are configured.
