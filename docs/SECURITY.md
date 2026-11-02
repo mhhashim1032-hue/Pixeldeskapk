@@ -13,5 +13,6 @@
 - Verify dependency provenance, licenses and checksums.
 - Keep the PRoot corresponding source and relinkable build inputs with the development APK; production redistribution remains blocked pending license review.
 - Do not run arbitrary plugin code.
-- Provide explicit environment deletion and backup controls.
+- Require explicit confirmation before environment deletion; validate canonical containment and never follow symlinks while deleting a workspace.
+- Provide environment backup/export controls with integrity checks before release.
 - Do not claim sandboxing stronger than the actual PRoot/Android boundary.
