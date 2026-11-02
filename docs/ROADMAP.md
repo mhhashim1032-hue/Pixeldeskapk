@@ -21,14 +21,14 @@
 - [x] Implement rootfs download, bounded extraction, Debian metadata and ARM64 ELF validation.
 - [ ] Verify the real rootfs download/extraction and first shell command on a physical Pixel.
 - [x] Implement download integrity verification (resumable downloads remain open).
-- [ ] Implement environment lifecycle: create, start, stop, delete.
+- [x] Implement environment lifecycle: create, start, stop, delete.
 - [x] Add native PRoot startup/version probe with timeout and bounded output.
 - [x] Add bounded non-interactive PRoot command execution with exit code, stdout/stderr, timeout and cancellation handling.
 - [x] Add a persistent non-PTY shell with command history, reconnect and lifecycle cleanup.
 - [ ] Validate the persistent shell against the real Debian rootfs on a physical Pixel.
 - [ ] Add a real PTY for terminal control sequences, Ctrl+C and full-screen applications.
-- [ ] Configure guest DNS from Android active-network DNS servers.
-- [ ] Add safe APT update, install, remove and cache-clean operations.
+- [x] Configure guest DNS from Android active-network DNS servers.
+- [x] Add safe APT update, install, remove and cache-clean operations.
 - [x] Implement safe app-private workspace storage layout.
 - [ ] Implement environment backup/export.
 - [ ] Verify on a physical ARM64 Android device.
