@@ -17,7 +17,7 @@
 
 ## Initial implementation
 
-The current foundation is a native Compose shell. It does not yet install Linux, launch a desktop session, execute EXE files, or create virtual machines. The UI labels these capabilities as planned, experimental or research.
+The app now downloads, verifies and extracts a pinned Debian 12 Bookworm ARM64 rootfs into app-private storage, and packages a native PRoot candidate with a startup/version probe. It does not yet launch a guest shell or desktop session, execute EXE files, or create virtual machines.
 
 ## Design constraints
 
@@ -43,19 +43,17 @@ The current foundation is a native Compose shell. It does not yet install Linux,
 - streams to a temporary `.part` file, checks cancellation and size limits, and verifies the digest;
 - promotes the archive only after successful verification and removes partial data on failure.
 
-It does not yet extract a root filesystem, install a runtime executable, or execute downloaded code. A production catalog must pin source URLs, versions, hashes, license metadata and supported CPU architectures before the UI exposes an install action.
+It is used by the Debian rootfs installer. The catalog pins source URL, version, SHA-256, download size limit, expanded-size limit and architecture. Downloaded archives are never executed.
 
 ## Linux runtime integration decision
 
 The first target remains an ARM64 Debian userspace under PRoot on unrooted Android. PRoot-Distro is useful as a technical reference for rootless OCI/rootfs management, but it is a separate GPL-3.0 project and is not copied or bundled by this repository. PRoot itself and its Android-specific dependencies require a reproducible Android/NDK build and license review. A Termux binary cannot simply be assumed executable from another app's private sandbox.
 
 Before a real shell is enabled, the project must:
-1. build or obtain an Android-compatible ARM64 PRoot executable with reproducible provenance;
-2. verify all runtime and rootfs artifacts by pinned hashes;
-3. extract archives with path traversal, symlink, hardlink, device-node and size protections;
-4. validate the rootfs architecture and required shell binaries;
-5. launch a minimal non-interactive command and collect exit code/stdout/stderr;
-6. test process cancellation, app backgrounding, storage exhaustion and cleanup on a physical ARM64 device.
+1. verify the native PRoot startup probe on the target Pixel;
+2. launch a minimal non-interactive command inside the installed rootfs and collect exit code/stdout/stderr;
+3. test process cancellation, app backgrounding, storage exhaustion and cleanup on a physical ARM64 device;
+4. complete the dependency/license review for production redistribution.
 
 References:
 - PRoot-Distro project and architecture: https://github.com/termux/proot-distro
@@ -64,9 +62,9 @@ References:
 
 ## Safe rootfs archive extraction
 
-`SafeRootfsExtractor` supports gzip-compressed TAR archives and extracts into a fresh staging directory before promotion. It enforces configurable entry-count, total expanded-size and per-file limits; rejects absolute archive paths, parent traversal, duplicate paths, hard links and special filesystem nodes; and validates symbolic-link targets remain inside the rootfs. Absolute Linux symlinks are rewritten as equivalent relative links rooted inside the extraction directory, so common paths such as `/bin` do not become host-absolute Android paths. File ownership and privileged mode bits are not restored.
+`SafeRootfsExtractor` supports gzip-compressed TAR archives and extracts into a fresh staging directory before promotion. It enforces configurable entry-count, total expanded-size and per-file limits; rejects absolute archive paths, parent traversal, duplicate file paths and special filesystem nodes; materializes hard links as bounded copies; and validates symbolic-link targets remain inside the rootfs. Absolute Linux symlinks are rewritten as equivalent relative links rooted inside the extraction directory, so common paths such as `/bin` do not become host-absolute Android paths. File ownership and privileged mode bits are not restored.
 
-The initial implementation deliberately rejects hard links and device nodes. This may exclude some distribution archives; the installer must select and test a compatible rootfs artifact rather than silently weakening these checks. Extraction is not yet connected to the UI or a distribution catalog.
+Device nodes remain deliberately rejected. Hard-link targets must refer to an earlier regular file inside the rootfs and are copied with size and cancellation checks, avoiding host inode aliasing. The extractor is connected to the Debian installer; physical-device archive validation remains outstanding.
 
 
 ## Native PRoot packaging investigation
@@ -92,3 +90,10 @@ References:
 `ProotRuntimeProbe` checks the ARM64 ABI, verifies the executable and loader files exist, then starts PRoot with the explicit `PROOT_LOADER` path and its version flag. The command runs off the UI thread with a timeout and bounded output capture. This verifies only native process startup; it does not prove rootfs installation, shell execution, graphics, Windows compatibility or physical-device support.
 
 The APK build pipeline and PRoot source archive must remain paired for redistribution. The source archive includes the pinned source tree and build intermediates needed for the static LGPL-linked payload review. Physical Pixel validation remains mandatory before enabling environment installation.
+
+
+## Debian rootfs installation
+
+`RootfsCatalog` pins the Debian 12 Bookworm ARM64 OCI rootfs layer from a fixed `debuerreotype/docker-debian-artifacts` commit. `RootfsInstaller` downloads it through `VerifiedDownloader`, checks the pinned SHA-256, extracts it with bounded TAR.GZ handling, and validates `/etc/os-release`, `usr/bin/dpkg` and the ELF64 AArch64 machine type of a POSIX shell before reporting the rootfs installed.
+
+The installer runs on `Dispatchers.IO`, refuses to overwrite a non-empty rootfs, removes partial installations on failure/cancellation, and deletes the downloaded archive after installation. It does not yet launch a command in the guest rootfs.
