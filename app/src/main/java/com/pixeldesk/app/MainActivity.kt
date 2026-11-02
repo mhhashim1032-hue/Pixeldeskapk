@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -224,64 +225,181 @@ private fun EnvironmentsScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var workspaces by remember { mutableStateOf(WorkspaceStorage.list(context)) }
-    var message by remember { mutableStateOf("Debian 12 ARM64 is ready to install.") }
-    var isInstalling by remember { mutableStateOf(false) }
-    val installedWorkspace = remember(workspaces) {
-        workspaces.firstOrNull { workspace ->
-            runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.isSuccess
+    var message by remember { mutableStateOf("Create a workspace or install Debian 12 ARM64.") }
+    var newEnvironmentName by rememberSaveable { mutableStateOf("") }
+    var isCreating by remember { mutableStateOf(false) }
+    var installingId by remember { mutableStateOf<String?>(null) }
+    var pendingDelete by remember { mutableStateOf<EnvironmentWorkspace?>(null) }
+
+    fun refreshWorkspaces() {
+        workspaces = WorkspaceStorage.list(context)
+    }
+
+    fun installDebian(target: EnvironmentWorkspace) {
+        scope.launch {
+            installingId = target.id
+            message = "Downloading and verifying Debian 12 ARM64 for ${target.displayName}…"
+            try {
+                val result = RootfsInstaller.install(target)
+                refreshWorkspaces()
+                message = "Installed Debian ${result.validation.release} ARM64: ${result.extractedEntries} entries, ${result.expandedBytes.toReadableSize()} expanded."
+            } catch (error: Exception) {
+                message = error.message ?: "Debian installation failed."
+            } finally {
+                installingId = null
+            }
         }
     }
 
-    PageScaffold("Environments", "Install a verified Debian ARM64 userspace in private app storage.") {
+    PageScaffold("Environments", "Create, start, stop and manage private Linux workspaces.") {
         FeatureCard(
-            "Debian 12 Bookworm · ARM64",
-            "Pinned official rootfs layer · HTTPS download · SHA-256 verification.",
-            if (installedWorkspace != null) "ROOTFS INSTALLED" else "READY TO INSTALL",
-            if (installedWorkspace != null) Cyan else Violet
+            "Local ARM64 Linux",
+            "Each environment has private rootfs, home, downloads and temporary storage.",
+            "${workspaces.size} WORKSPACE(S)",
+            Cyan
+        )
+
+        OutlinedTextField(
+            value = newEnvironmentName,
+            onValueChange = { newEnvironmentName = it },
+            label = { Text("New environment name") },
+            placeholder = { Text("Debian ARM64") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
         Button(
             onClick = {
                 scope.launch {
-                    isInstalling = true
-                    message = "Downloading and verifying the pinned Debian rootfs (about 48 MB)…"
+                    isCreating = true
                     try {
-                        val workspace = WorkspaceStorage.list(context)
-                            .firstOrNull { it.id == "debian-arm64" }
-                            ?: WorkspaceStorage.create(context, "Debian ARM64")
-                        val result = RootfsInstaller.install(workspace)
-                        workspaces = WorkspaceStorage.list(context)
-                        message = "Installed Debian ${result.validation.release} ARM64: ${result.extractedEntries} archive entries, ${result.expandedBytes.toReadableSize()} expanded. Open Terminal to test the Debian shell; physical-device runtime validation is still pending."
+                        val created = withContext(Dispatchers.IO) {
+                            WorkspaceStorage.create(context, newEnvironmentName)
+                        }
+                        newEnvironmentName = ""
+                        refreshWorkspaces()
+                        message = "Created ${created.displayName}. Install a Debian root filesystem to run Linux."
                     } catch (error: Exception) {
-                        message = error.message ?: "Debian installation failed."
+                        message = error.message ?: "Could not create environment."
                     } finally {
-                        isInstalling = false
+                        isCreating = false
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isInstalling && installedWorkspace == null
-        ) {
-            Text(
-                when {
-                    isInstalling -> "Installing Debian…"
-                    installedWorkspace != null -> "Debian already installed"
-                    else -> "Install Debian 12 ARM64"
-                }
-            )
+            enabled = newEnvironmentName.isNotBlank() && !isCreating,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(if (isCreating) "Creating…" else "Create workspace") }
+
+        val defaultWorkspace = workspaces.firstOrNull { it.id == "debian-arm64" }
+        if (defaultWorkspace == null) {
+            Button(
+                onClick = {
+                    scope.launch {
+                        try {
+                            val target = withContext(Dispatchers.IO) {
+                                WorkspaceStorage.create(context, "Debian ARM64")
+                            }
+                            refreshWorkspaces()
+                            installDebian(target)
+                        } catch (error: Exception) {
+                            message = error.message ?: "Could not prepare Debian workspace."
+                        }
+                    }
+                },
+                enabled = installingId == null,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Create and install Debian 12 ARM64") }
         }
+
         Text(message, color = Muted, fontSize = 12.sp)
         workspaces.forEach { workspace ->
             val validation = runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.getOrNull()
+            val running = EnvironmentRuntimeManager.isRunning(workspace.id)
             FeatureCard(
                 workspace.displayName,
-                if (validation != null) "Debian ${validation.release} ${validation.architecture} root filesystem is installed."
-                else "Private workspace folders are ready; no Linux root filesystem is installed.",
-                if (validation != null) "ROOTFS INSTALLED" else "STORAGE ONLY",
-                if (validation != null) Cyan else Muted
+                when {
+                    running -> "Debian shell process is running in this app session."
+                    validation != null -> "Debian ${validation.release} ${validation.architecture} root filesystem is installed."
+                    else -> "Private workspace storage is ready; no Linux root filesystem is installed."
+                },
+                when {
+                    running -> "RUNNING"
+                    validation != null -> "STOPPED"
+                    else -> "STORAGE ONLY"
+                },
+                if (running) Cyan else if (validation != null) Violet else Muted
             )
+            if (validation == null) {
+                Button(
+                    onClick = { installDebian(workspace) },
+                    enabled = installingId == null,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(if (installingId == workspace.id) "Installing…" else "Install Debian in this workspace") }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                message = "Starting ${workspace.displayName}…"
+                                try {
+                                    EnvironmentRuntimeManager.start(context, workspace)
+                                    message = "${workspace.displayName} is running."
+                                } catch (error: Exception) {
+                                    message = error.message ?: "Could not start environment."
+                                }
+                            }
+                        },
+                        enabled = !running,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Start") }
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                EnvironmentRuntimeManager.stop(workspace.id)
+                                message = "${workspace.displayName} stopped."
+                            }
+                        },
+                        enabled = running
+                    ) { Text("Stop") }
+                }
+            }
+            TextButton(
+                onClick = { pendingDelete = workspace },
+                enabled = installingId != workspace.id
+            ) { Text("Delete environment") }
         }
+
         FeatureCard("Windows compatibility", "Wine and CPU translation remain experimental and are not enabled.", "EXPERIMENTAL", Cyan)
         FeatureCard("Virtual machines", "QEMU feasibility research; device support and performance are not yet verified.", "RESEARCH", Muted)
+    }
+
+    val deleting = pendingDelete
+    if (deleting != null) {
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete ${deleting.displayName}?") },
+            text = { Text("This permanently deletes its Debian root filesystem, installed packages, home files and downloads from PIXEL DESK. This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        try {
+                            EnvironmentRuntimeManager.stop(deleting.id)
+                            withContext(Dispatchers.IO) {
+                                WorkspaceStorage.delete(context, deleting)
+                            }
+                            refreshWorkspaces()
+                            message = "Deleted ${deleting.displayName}."
+                        } catch (error: Exception) {
+                            message = error.message ?: "Could not delete environment."
+                        } finally {
+                            pendingDelete = null
+                        }
+                    }
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text("Cancel") }
+            }
+        )
     }
 }
 
