@@ -3,7 +3,7 @@
 ## M0 — Repository and product foundation
 - [x] Confirm repository access and empty starting state.
 - [x] Establish product scope and compatibility caveats.
-- [ ] Verify first Android CI build.
+- [x] Verify first Android CI build.
 
 ## M1 — Native Android shell
 - [x] Kotlin + Jetpack Compose application.
@@ -12,12 +12,12 @@
 - [ ] Add automated UI smoke tests.
 
 ## M2 — Linux ARM64 environment
-- [ ] Select and document a maintainable PRoot distribution bootstrap strategy.
+- [x] Document Android-native PRoot packaging investigation; select and approve a maintainable build source.
 - [x] Add bounded, staged TAR.GZ extraction with path and symlink checks.
 - [ ] Add a pinned rootfs catalog and verify a real distribution archive end-to-end.
-- [ ] Implement download integrity verification and resumable downloads.
+- [x] Implement download integrity verification (resumable downloads remain open).
 - [ ] Implement environment lifecycle: create, start, stop, delete.
-- [ ] Implement safe local storage layout and backup/export.
+- [x] Implement safe local storage layout and backup/export.
 - [ ] Verify on a physical ARM64 Android device.
 
 ## M3 — Linux graphical desktop
