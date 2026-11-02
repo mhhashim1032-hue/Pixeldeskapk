@@ -43,6 +43,20 @@ class ProotInteractiveSessionTest {
     }
 
     @Test
+    fun shellExitIsNotReportedAsTimeout() = runBlocking {
+        val fixture = fixture()
+        val session = ProotInteractiveSession.start(fixture.files, fixture.workspace)
+        try {
+            val result = session.execute("exit")
+            assertFalse(result.sessionAlive)
+            assertFalse(result.timedOut)
+        } finally {
+            session.close()
+            fixture.root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun timeoutTerminatesSession() = runBlocking {
         val fixture = fixture()
         val session = ProotInteractiveSession.start(fixture.files, fixture.workspace)
