@@ -66,29 +66,34 @@ class ProotInteractiveSession private constructor(
             val captured = StringBuilder()
             val pending = StringBuilder()
             var exitCode: Int? = null
-            val completed = withTimeoutOrNull(timeoutMs) {
-                while (true) {
-                    val chunk = output.receiveCatching().getOrNull() ?: break
-                    pending.append(chunk)
-                    val markerIndex = pending.indexOf(marker)
-                    if (markerIndex >= 0) {
-                        if (markerIndex > 0) {
-                            appendBounded(captured, pending.substring(0, markerIndex))
-                            pending.delete(0, markerIndex)
+            val completed = try {
+                withTimeoutOrNull(timeoutMs) {
+                    while (true) {
+                        val chunk = output.receiveCatching().getOrNull() ?: break
+                        pending.append(chunk)
+                        val markerIndex = pending.indexOf(marker)
+                        if (markerIndex >= 0) {
+                            if (markerIndex > 0) {
+                                appendBounded(captured, pending.substring(0, markerIndex))
+                                pending.delete(0, markerIndex)
+                            }
+                            val statusStart = marker.length
+                            val statusEnd = pending.indexOf("\\n", statusStart)
+                            if (statusEnd >= 0) {
+                                exitCode = pending.substring(statusStart, statusEnd).trim().toIntOrNull()
+                                return@withTimeoutOrNull true
+                            }
+                        } else if (pending.length > marker.length + 32) {
+                            val flushCount = pending.length - (marker.length + 32)
+                            appendBounded(captured, pending.substring(0, flushCount))
+                            pending.delete(0, flushCount)
                         }
-                        val statusStart = marker.length
-                        val statusEnd = pending.indexOf("\n", statusStart)
-                        if (statusEnd >= 0) {
-                            exitCode = pending.substring(statusStart, statusEnd).trim().toIntOrNull()
-                            return@withTimeoutOrNull true
-                        }
-                    } else if (pending.length > marker.length + 32) {
-                        val flushCount = pending.length - (marker.length + 32)
-                        appendBounded(captured, pending.substring(0, flushCount))
-                        pending.delete(0, flushCount)
                     }
+                    false
                 }
-                false
+            } catch (cancelled: CancellationException) {
+                close()
+                throw cancelled
             }
 
             if (completed == null) {
