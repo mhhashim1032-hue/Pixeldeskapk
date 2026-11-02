@@ -53,7 +53,6 @@ printf '%s\n' \\
 
 cp "$ARTIFACT_DIR/proot" "$JNI_DIR/libproot.so"
 cp "$ARTIFACT_DIR/loader" "$JNI_DIR/libproot_loader.so"
-cp "$ARTIFACT_DIR/loader32" "$JNI_DIR/libproot_loader32.so"
 
 cp "$ARTIFACT_DIR/PRoot-COPYING" "$ASSET_DIR/licenses/PRoot-COPYING.txt"
 cp "$ARTIFACT_DIR/TALLOC-LGPL-3.0.txt" "$ASSET_DIR/licenses/TALLOC-LGPL-3.0.txt"
