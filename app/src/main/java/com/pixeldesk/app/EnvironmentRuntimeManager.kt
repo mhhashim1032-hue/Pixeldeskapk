@@ -12,16 +12,26 @@ import kotlinx.coroutines.sync.withLock
 object EnvironmentRuntimeManager {
     private val sessions = ConcurrentHashMap<String, ProotInteractiveSession>()
     private val mutex = Mutex()
+    @Volatile private var shuttingDown = false
+
+    fun resume() {
+        shuttingDown = false
+    }
 
     suspend fun start(
         context: Context,
         workspace: EnvironmentWorkspace
     ): ProotInteractiveSession = mutex.withLock {
+        check(!shuttingDown) { "PIXEL DESK is shutting down; retry after it resumes." }
         val existing = sessions[workspace.id]
         if (existing?.isAlive == true) return@withLock existing
         existing?.close()
         sessions.remove(workspace.id)
         ProotInteractiveSession.start(context, workspace).also { session ->
+            if (shuttingDown) {
+                session.close()
+                error("PIXEL DESK shut down while the environment was starting.")
+            }
             sessions[workspace.id] = session
         }
     }
@@ -36,6 +46,7 @@ object EnvironmentRuntimeManager {
         sessions[environmentId]?.isAlive == true
 
     fun stopAll() {
+        shuttingDown = true
         sessions.values.forEach { it.close() }
         sessions.clear()
     }
