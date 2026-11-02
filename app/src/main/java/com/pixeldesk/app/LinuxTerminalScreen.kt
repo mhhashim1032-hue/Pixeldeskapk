@@ -18,6 +18,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,10 +44,32 @@ fun LinuxTerminalScreen() {
             runCatching { RootfsValidator.validate(candidate.rootFilesystem) }.isSuccess
         }
     }
-    var command by rememberSaveable { mutableStateOf("uname -a") }
-    var output by remember { mutableStateOf("PIXEL DESK terminal\nInstall Debian ARM64 to begin.") }
+    var session by remember { mutableStateOf<ProotInteractiveSession?>(null) }
+    var command by rememberSaveable { mutableStateOf("uname -m") }
+    var output by remember { mutableStateOf("PIXEL DESK terminal\nPreparing local Debian shell…") }
     var running by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("NOT CONNECTED") }
+    var status by remember { mutableStateOf("STARTING") }
+    var history by rememberSaveable { mutableStateOf(emptyList<String>()) }
+
+    LaunchedEffect(workspace) {
+        if (workspace == null) {
+            status = "NOT INSTALLED"
+            output = "Install Debian 12 ARM64 from Environments before opening the terminal."
+        } else {
+            try {
+                session = ProotInteractiveSession.start(context, workspace)
+                status = "CONNECTED"
+                output = "Connected to ${workspace.displayName}\nTry: uname -m"
+            } catch (error: Exception) {
+                status = "CONNECTION ERROR"
+                output = error.message ?: "Could not start the Debian shell."
+            }
+        }
+    }
+
+    DisposableEffect(session) {
+        onDispose { session?.close() }
+    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF090B12)) {
         Column(
@@ -54,10 +78,10 @@ fun LinuxTerminalScreen() {
         ) {
             Spacer(Modifier.height(8.dp))
             Text("Linux Terminal", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-            Text("Execute commands inside your local Debian ARM64 userspace.", color = Color(0xFF9AA4B8), fontSize = 13.sp)
+            Text("Persistent local Debian ARM64 shell", color = Color(0xFF9AA4B8), fontSize = 13.sp)
             Text(
-                workspace?.displayName ?: "No verified Debian environment",
-                color = if (workspace != null) Color(0xFF67DCE8) else Color(0xFF9AA4B8),
+                "${workspace?.displayName ?: "No verified Debian environment"} · $status",
+                color = if (session != null) Color(0xFF67DCE8) else Color(0xFF9AA4B8),
                 fontWeight = FontWeight.SemiBold
             )
             OutlinedTextField(
@@ -67,48 +91,76 @@ fun LinuxTerminalScreen() {
                 placeholder = { Text("uname -m") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 1,
-                maxLines = 3
+                maxLines = 4
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
-                        val selected = workspace ?: return@Button
+                        val activeSession = session ?: return@Button
+                        val submitted = command.trim()
                         scope.launch {
                             running = true
-                            status = "RUNNING"
-                            output = "$ " + command.trim() + "\n"
+                            history = (history.filterNot { it == submitted } + submitted).takeLast(50)
                             try {
-                                val result = ProotCommandRunner.run(context, selected, command.trim())
-                                output += result.stdout
-                                if (result.stderr.isNotBlank()) output += "\n[stderr]\n" + result.stderr
-                                status = if (result.timedOut) "TIMED OUT"
-                                    else if (result.success) "EXIT 0"
-                                    else "EXIT " + (result.exitCode?.toString() ?: "ERROR")
-                                output += "\n\n" + status + " · " + result.durationMs + " ms"
+                                val result = activeSession.execute(submitted)
+                                val statusText = if (result.timedOut) "TIMED OUT"
+                                    else "EXIT ${result.exitCode ?: "UNKNOWN"}"
+                                val addition = "$ $submitted\n${result.output}\n$statusText · ${result.durationMs} ms\n"
+                                output = (output + "\n" + addition).takeLast(65_536)
+                                status = if (result.sessionAlive) "CONNECTED" else "DISCONNECTED"
+                                if (!result.sessionAlive) session = null
                             } catch (error: Exception) {
-                                status = "ERROR"
-                                output += "\n" + (error.message ?: "Command failed.")
+                                output = (output + "\n" + (error.message ?: "Command failed.")).takeLast(65_536)
+                                status = "COMMAND ERROR"
                             } finally {
                                 running = false
                             }
                         }
                     },
-                    enabled = workspace != null && !running && command.isNotBlank(),
+                    enabled = session != null && !running && command.isNotBlank(),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(if (running) "Running…" else "Run command")
+                    Text(if (running) "Running…" else "Run")
                 }
+                TextButton(
+                    onClick = {
+                        session?.close()
+                        session = null
+                        status = "DISCONNECTED"
+                    },
+                    enabled = session != null && !running
+                ) { Text("Stop") }
                 TextButton(onClick = {
                     output = "PIXEL DESK terminal\nOutput cleared."
-                    status = if (workspace != null) "READY" else "NOT CONNECTED"
-                }) {
-                    Text("Clear")
+                }) { Text("Clear") }
+            }
+            if (session == null && workspace != null && !running) {
+                TextButton(onClick = {
+                    scope.launch {
+                        status = "CONNECTING"
+                        try {
+                            session = ProotInteractiveSession.start(context, workspace)
+                            status = "CONNECTED"
+                            output += "\nShell reconnected."
+                        } catch (error: Exception) {
+                            status = "CONNECTION ERROR"
+                            output += "\n${error.message ?: "Could not reconnect."}"
+                        }
+                    }
+                }) { Text("Reconnect shell") }
+            }
+            if (history.isNotEmpty()) {
+                Text("RECENT COMMANDS", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                history.takeLast(5).asReversed().forEach { previous ->
+                    TextButton(onClick = { command = previous }) {
+                        Text(previous.take(72), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    }
                 }
             }
             Text(status, color = Color(0xFF67DCE8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Column(
                 Modifier.fillMaxWidth()
-                    .height(280.dp)
+                    .height(320.dp)
                     .background(Color(0xFF05070C), RoundedCornerShape(16.dp))
                     .verticalScroll(rememberScrollState())
                     .padding(14.dp)
@@ -122,7 +174,7 @@ fun LinuxTerminalScreen() {
                 )
             }
             Text(
-                "PRoot provides a Linux userspace, not a separate Linux kernel. Commands run locally in this app's sandbox.",
+                "Shell variables and working-directory changes persist between commands. This pipe-based terminal does not yet support full-screen interactive programs or job control.",
                 color = Color(0xFF9AA4B8),
                 fontSize = 10.sp
             )
