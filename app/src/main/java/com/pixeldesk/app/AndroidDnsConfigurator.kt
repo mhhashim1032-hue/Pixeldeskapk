@@ -24,9 +24,9 @@ object AndroidDnsConfigurator {
             val ipv6 = address.contains(':') && address.matches(Regex("[0-9a-fA-F:]+"))
             require(ipv4 || ipv6) { "Invalid DNS server address." }
         }
-        return addresses.distinct().joinToString(separator = "\\n", postfix = "\\n") {
+        return addresses.distinct().joinToString(separator = "\n", postfix = "\n") {
             "nameserver $it"
-        } + "options timeout:2 attempts:2\\n"
+        } + "options timeout:2 attempts:2\n"
     }
 
     fun configure(context: Context, rootfs: File): DnsConfigurationResult {
