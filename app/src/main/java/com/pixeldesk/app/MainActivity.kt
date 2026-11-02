@@ -1,5 +1,7 @@
 package com.pixeldesk.app
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
@@ -574,6 +576,8 @@ private fun SettingsScreen() {
             color = Muted,
             fontSize = 10.sp
         )
+        Text("OPTIONAL LINUX DESKTOP BACKEND", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        DesktopBackendSetupCard()
         FeatureCard("Compatibility", "Windows and VM support will be reported per device and application.", "HONEST STATUS", Muted)
     }
 }
@@ -597,5 +601,57 @@ private fun EmptyState(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
             Text(title, color = Color.White, fontWeight = FontWeight.SemiBold)
             Text(body, color = Muted, fontSize = 12.sp)
         }
+    }
+}
+
+
+@Composable
+private fun DesktopBackendSetupCard() {
+    val context = LocalContext.current
+    var status by remember { mutableStateOf(DesktopBackendProbe.read(context)) }
+    var message by remember { mutableStateOf("External X11 integration is not enabled yet.") }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FeatureCard(
+            "Termux app",
+            status.termuxVersion?.let { "Detected version $it" } ?: "Not detected on this device",
+            if (status.termuxInstalled) "INSTALLED" else "NOT FOUND",
+            if (status.termuxInstalled) Cyan else Muted
+        )
+        FeatureCard(
+            "Termux:X11",
+            status.x11Version?.let { "Detected version $it" } ?: "Not detected on this device",
+            if (status.x11Installed) "INSTALLED" else "NOT FOUND",
+            if (status.x11Installed) Cyan else Muted
+        )
+        Button(
+            onClick = { status = DesktopBackendProbe.read(context) },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Refresh external app detection") }
+        Button(
+            onClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/termux/termux-x11/releases"))
+                    )
+                }.onFailure { message = "Could not open the official Termux:X11 release page." }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("View official Termux:X11 releases") }
+        Text(
+            if (status.bothAndroidPackagesInstalled) {
+                "Both Android apps are detected. The Termux companion package and a secure shared X11 socket are not verified."
+            } else {
+                "Termux:X11 needs its Android app and a companion Termux package. This screen only checks Android app installation."
+            },
+            color = Muted,
+            fontSize = 11.sp
+        )
+        Text(
+            "Desktop launch is intentionally disabled until the PRoot-to-X11 socket and process bridge pass sandbox and device tests. PIXEL DESK does not silently install or bundle third-party apps.",
+            color = Muted,
+            fontSize = 10.sp
+        )
+        Text(message, color = Muted, fontSize = 10.sp)
     }
 }
