@@ -76,7 +76,7 @@ object WorkspaceFiles {
         val target = if (relativePath.isBlank()) canonicalRoot else File(canonicalRoot, relativePath)
         val canonicalTarget = target.canonicalFile
         val rootPath = canonicalRoot.path
-        check(canonicalTarget.path == rootPath ||
+        require(canonicalTarget.path == rootPath ||
             canonicalTarget.path.startsWith(rootPath + File.separator)) {
             "Path is outside the workspace."
         }
