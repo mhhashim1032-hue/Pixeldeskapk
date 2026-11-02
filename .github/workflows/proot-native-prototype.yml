@@ -1,0 +1,87 @@
+name: PRoot native ARM64 prototype
+
+on:
+  push:
+    branches: [research/proot-native-prototype]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proot-native-prototype
+  cancel-in-progress: true
+
+jobs:
+  build-proot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PIXEL DESK
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned PRoot static build research source
+        uses: actions/checkout@v4
+        with:
+          repository: berilevi/proot-static
+          ref: 6f8ebfd8e24887dfba64c3f2d7d5fe9dc059b60e
+          path: native/proot-src
+          persist-credentials: false
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential binutils make git
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ndk;28.2.13676358
+
+      - name: Build static Android ARM64 PRoot
+        working-directory: native/proot-src
+        env:
+          NDK: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
+          OUT: ${{ github.workspace }}/native/proot-build
+          REPO_ARTIFACT_DIR: ${{ github.workspace }}/native/proot-artifacts
+        run: bash tools/build-static-aarch64.sh
+
+      - name: Validate native artifacts and record provenance
+        run: |
+          set -euo pipefail
+          test -s native/proot-artifacts/proot
+          test -s native/proot-artifacts/loader
+          readelf -h native/proot-artifacts/proot | grep -q "AArch64"
+          readelf -h native/proot-artifacts/loader | grep -q "AArch64"
+          if readelf -d native/proot-artifacts/proot 2>/dev/null | grep -q "NEEDED"; then
+            echo "Expected the prototype PRoot executable to be statically linked." >&2
+            exit 1
+          fi
+          cp native/proot-src/COPYING native/proot-artifacts/PRoot-COPYING
+          cp native/proot-src/third_party/talloc-2.4.2/COPYING.LESSER native/proot-artifacts/TALLOC-LGPL-3.0.txt
+          cp native/proot-src/third_party/talloc-2.4.2/COPYING.GPL-3 native/proot-artifacts/TALLOC-GPL-3.0.txt
+          printf '%s\n' \
+            "source=https://github.com/berilevi/proot-static" \
+            "commit=6f8ebfd8e24887dfba64c3f2d7d5fe9dc059b60e" \
+            "ndk=28.2.13676358" \
+            "abi=arm64-v8a" \
+            "purpose=research-only; not bundled into PIXEL DESK APK" \
+            > native/proot-artifacts/PROVENANCE.txt
+          (cd native/proot-artifacts && sha256sum proot loader > SHA256SUMS)
+
+      - name: Upload PRoot prototype and reproducibility inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixeldesk-proot-arm64-prototype
+          path: |
+            native/proot-artifacts/
+            native/proot-build/
+            native/proot-src/
+          if-no-files-found: error
+          retention-days: 14
