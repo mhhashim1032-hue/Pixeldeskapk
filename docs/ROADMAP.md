@@ -12,12 +12,14 @@
 - [ ] Add automated UI smoke tests.
 
 ## M2 — Linux ARM64 environment
-- [x] Document Android-native PRoot packaging investigation; select and approve a maintainable build source.
+- [x] Document Android-native PRoot packaging candidates.
+- [ ] Select and approve a maintainable, license-reviewed PRoot build source.
 - [x] Add bounded, staged TAR.GZ extraction with path and symlink checks.
 - [ ] Add a pinned rootfs catalog and verify a real distribution archive end-to-end.
 - [x] Implement download integrity verification (resumable downloads remain open).
 - [ ] Implement environment lifecycle: create, start, stop, delete.
-- [x] Implement safe local storage layout and backup/export.
+- [x] Implement safe app-private workspace storage layout.
+- [ ] Implement environment backup/export.
 - [ ] Verify on a physical ARM64 Android device.
 
 ## M3 — Linux graphical desktop
@@ -44,8 +46,9 @@
 
 ## M7 — Security, QA and releases
 - [ ] Threat model and dependency/license inventory.
-- [ ] Unit, integration and UI tests.
-- [ ] CI debug APK artifacts.
+- [x] Unit tests for workspace, import, downloader and rootfs extraction.
+- [ ] Integration and UI tests.
+- [x] CI debug APK artifacts.
 - [ ] Signed release workflow after signing secrets are configured.
 
 ## Completion policy
