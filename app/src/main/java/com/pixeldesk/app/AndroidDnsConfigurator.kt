@@ -2,7 +2,6 @@ package com.pixeldesk.app
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.InetAddresses
 import java.io.File
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -50,8 +49,12 @@ object AndroidDnsConfigurator {
             "options timeout:2 attempts:2\n"
         val temporary = Files.createTempFile(etc.toPath(), ".pixeldesk-resolv-", ".tmp")
         try {
-            Files.writeString(temporary, content)
-            Files.move(temporary, destination.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
+            temporary.toFile().writeText(content)
+            try {
+                Files.move(temporary, destination.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
+            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(temporary, destination.toPath(), REPLACE_EXISTING)
+            }
         } finally {
             Files.deleteIfExists(temporary)
         }
