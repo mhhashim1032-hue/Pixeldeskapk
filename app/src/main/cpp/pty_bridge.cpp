@@ -1,10 +1,13 @@
 #include <jni.h>
+#include <algorithm>
+#include <utility>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cctype>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -31,14 +34,17 @@ std::string from_java(JNIEnv *env, jstring value) {
 }
 
 bool read_array(JNIEnv *env, jobjectArray source, std::vector<std::string> &storage) {
-    if (source == nullptr) return true;
+    if (source == nullptr) return false;
     const jsize count = env->GetArrayLength(source);
+    if (count < 0 || count > 256) return false;
     storage.reserve(static_cast<size_t>(count));
     for (jsize i = 0; i < count; ++i) {
         auto item = static_cast<jstring>(env->GetObjectArrayElement(source, i));
         if (item == nullptr) return false;
-        storage.push_back(from_java(env, item));
+        std::string value = from_java(env, item);
         env->DeleteLocalRef(item);
+        if (env->ExceptionCheck() || value.size() > 8192) return false;
+        storage.push_back(std::move(value));
     }
     return true;
 }
@@ -60,16 +66,23 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_pixeldesk_app_NativePtyBridge_spawn(
     JNIEnv *env, jclass, jstring executable_value, jobjectArray arguments,
     jobjectArray environment, jint rows, jint columns) {
-    if (executable_value == nullptr || rows < 2 || columns < 2) {
+    if (executable_value == nullptr || rows < 2 || rows > 300 ||
+        columns < 2 || columns > 500) {
         throw_io(env, "Invalid PTY launch parameters.");
         return 0;
     }
     const std::string executable = from_java(env, executable_value);
+    if (env->ExceptionCheck() || executable.empty() || executable.size() > 4096 ||
+        executable.front() != '/') {
+        throw_io(env, "PTY executable must be a valid absolute path.");
+        return 0;
+    }
     std::vector<std::string> argument_storage;
     std::vector<std::string> environment_storage;
     if (!read_array(env, arguments, argument_storage) ||
-        !read_array(env, environment, environment_storage)) {
-        throw_io(env, "Invalid PTY argument or environment list.");
+        !read_array(env, environment, environment_storage) ||
+        environment_storage.size() > 128) {
+        throw_io(env, "Invalid or oversized PTY argument/environment list.");
         return 0;
     }
 
@@ -91,7 +104,15 @@ Java_com_pixeldesk_app_NativePtyBridge_spawn(
             throw_io(env, "Invalid PTY environment entry.");
             return 0;
         }
-        env_map[item.substr(0, separator)] = item.substr(separator + 1);
+        const std::string key = item.substr(0, separator);
+        if (!(std::isalpha(static_cast<unsigned char>(key[0])) || key[0] == '_') ||
+            !std::all_of(key.begin(), key.end(), [](unsigned char ch) {
+                return std::isalnum(ch) || ch == '_';
+            })) {
+            throw_io(env, "Invalid PTY environment variable name.");
+            return 0;
+        }
+        env_map[key] = item.substr(separator + 1);
     }
     std::vector<std::string> env_storage;
     env_storage.reserve(env_map.size());
@@ -145,8 +166,9 @@ Java_com_pixeldesk_app_NativePtyBridge_spawn(
 extern "C" JNIEXPORT jint JNICALL
 Java_com_pixeldesk_app_NativePtyBridge_read(
     JNIEnv *env, jclass, jlong handle, jbyteArray destination, jint offset, jint length) {
-    if (destination == nullptr || offset < 0 || length <= 0 ||
-        offset + length > env->GetArrayLength(destination)) return -1;
+    if (destination == nullptr || offset < 0 || length <= 0 || length > 1024 * 1024) return -1;
+    const jsize array_length = env->GetArrayLength(destination);
+    if (offset > array_length || length > array_length - offset) return -1;
     std::vector<jbyte> buffer(static_cast<size_t>(length));
     ssize_t count;
     do { count = ::read(handle_fd(handle), buffer.data(), buffer.size()); } while (count < 0 && errno == EINTR);
@@ -158,8 +180,9 @@ Java_com_pixeldesk_app_NativePtyBridge_read(
 extern "C" JNIEXPORT jint JNICALL
 Java_com_pixeldesk_app_NativePtyBridge_write(
     JNIEnv *env, jclass, jlong handle, jbyteArray source, jint offset, jint length) {
-    if (source == nullptr || offset < 0 || length < 0 ||
-        offset + length > env->GetArrayLength(source)) return -1;
+    if (source == nullptr || offset < 0 || length <= 0 || length > 1024 * 1024) return -1;
+    const jsize array_length = env->GetArrayLength(source);
+    if (offset > array_length || length > array_length - offset) return -1;
     std::vector<jbyte> buffer(static_cast<size_t>(length));
     env->GetByteArrayRegion(source, offset, length, buffer.data());
     if (env->ExceptionCheck()) return -1;

@@ -65,7 +65,8 @@
 - [ ] Keep VM support optional and isolated.
 
 ## M7 — Security, QA and releases
-- [ ] Threat model and dependency/license inventory.
+- [x] Document application threat model, trust boundaries, native PTY bounds and release security gates.
+- [ ] Complete dependency/license inventory and physical-device security validation.
 - [x] Unit tests for workspace, import, downloader, rootfs extraction, command runner and persistent shell fixtures.
 - [ ] Physical-device integration tests for PRoot, DNS and APT.
 - [ ] Integration and UI tests.
