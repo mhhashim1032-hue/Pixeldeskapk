@@ -9,7 +9,6 @@ import kotlinx.coroutines.sync.withLock
 object EnvironmentRuntimeManager {
     private val sessions = ConcurrentHashMap<String, ProotInteractiveSession>()
     private val mutex = Mutex()
-    @Vol a
     @Volatile private var shuttingDown = false
     @Volatile private var selectedId: String? = null
 
