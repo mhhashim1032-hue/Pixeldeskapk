@@ -53,6 +53,8 @@ fun LinuxSoftwareScreen() {
     var status by remember { mutableStateOf("STARTING") }
     var networkStatus by remember { mutableStateOf("Checking Android network DNS…") }
     var running by remember { mutableStateOf(false) }
+    var installedApps by remember { mutableStateOf(emptyList<LinuxDesktopApp>()) }
+    var discoveringApps by remember { mutableStateOf(false) }
 
     LaunchedEffect(workspace) {
         if (workspace == null) {
@@ -149,6 +151,65 @@ fun LinuxSoftwareScreen() {
                 onClick = { runOperation(LinuxPackageManager.cleanOperation()) },
                 enabled = session != null && !running
             ) { Text("Clean package cache") }
+
+            Text("INSTALLED APPLICATIONS", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Discover launchable desktop entries installed in this Debian environment. Launching GUI apps is disabled until an X11 backend is validated.",
+                color = Color(0xFF9AA4B8),
+                fontSize = 10.sp
+            )
+            Button(
+                onClick = {
+                    val active = session ?: return@Button
+                    scope.launch {
+                        discoveringApps = true
+                        running = true
+                        status = "DISCOVERING APPS"
+                        try {
+                            val result = LinuxPackageManager.run(active, LinuxPackageManager.desktopAppsOperation())
+                            if (result.success) {
+                                installedApps = LinuxAppInventory.parseDesktopEntries(result.output)
+                                status = "APP INVENTORY READY"
+                                output = "Discovered ${installedApps.size} desktop application entries."
+                            } else {
+                                status = "APP DISCOVERY FAILED"
+                                output = result.output
+                            }
+                        } catch (error: Exception) {
+                            status = "APP DISCOVERY FAILED"
+                            output = error.message ?: "Could not discover installed applications."
+                        } finally {
+                            discoveringApps = false
+                            running = false
+                        }
+                    }
+                },
+                enabled = session != null && !running && !discoveringApps,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(if (discoveringApps) "Discovering…" else "Refresh installed applications") }
+            if (installedApps.isEmpty()) {
+                Text("No application entries loaded. Refresh to scan Debian desktop files.", color = Color(0xFF9AA4B8), fontSize = 11.sp)
+            } else {
+                Text("${installedApps.size} applications discovered", color = Color(0xFF67DCE8), fontWeight = FontWeight.SemiBold)
+                installedApps.take(60).forEach { app ->
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .background(Color(0xFF151A28), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(app.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text(app.executable, color = Color(0xFF9AA4B8), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                        Text(
+                            if (app.terminal) "Terminal application · launch unavailable" else "Desktop application · launch unavailable",
+                            color = Color(0xFF67DCE8),
+                            fontSize = 9.sp
+                        )
+                    }
+                }
+                if (installedApps.size > 60) {
+                    Text("Showing first 60 of ${installedApps.size} discovered entries.", color = Color(0xFF9AA4B8), fontSize = 10.sp)
+                }
+            }
 
             if (session == null && workspace != null && !running) {
                 TextButton(onClick = {

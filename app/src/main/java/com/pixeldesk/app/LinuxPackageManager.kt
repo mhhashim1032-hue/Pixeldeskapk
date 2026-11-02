@@ -17,9 +17,7 @@ object LinuxPackageManager {
             "Install or remove no more than $MAX_PACKAGES_PER_OPERATION packages at once."
         }
         names.forEach { name ->
-            require(packageNamePattern.matches(name)) {
-                "Invalid Debian package name: $name"
-            }
+            require(packageNamePattern.matches(name)) { "Invalid Debian package name: $name" }
         }
         return names
     }
@@ -48,6 +46,12 @@ object LinuxPackageManager {
     fun cleanOperation() = PackageOperation(
         title = "Clean package cache",
         command = "apt-get clean",
+        timeoutMs = 60_000L
+    )
+
+    fun desktopAppsOperation() = PackageOperation(
+        title = "Discover installed Linux applications",
+        command = """find /usr/share/applications /usr/local/share/applications "$HOME/.local/share/applications" -type f -name '*.desktop' -print 2>/dev/null | sort -u | while IFS= read -r file; do printf '\n__PIXEL_DESK_ENTRY__\nPATH=%s\n' "$file"; grep -E '^(Name|Exec|Icon|Type|NoDisplay|Hidden|Terminal)=' "$file" || true; done""",
         timeoutMs = 60_000L
     )
 

@@ -57,3 +57,6 @@ Termux:X11 has been evaluated as a possible optional backend. It is not bundled,
 
 
 Settings includes optional Termux / Termux:X11 package detection and a link to the official release page. This is setup diagnostics only; no graphical desktop session can currently be launched by PIXEL DESK.
+
+
+The software manager can discover installed Linux desktop application entries and display their metadata. GUI launching is intentionally disabled until the external X11 backend and process lifecycle are implemented and validated.
