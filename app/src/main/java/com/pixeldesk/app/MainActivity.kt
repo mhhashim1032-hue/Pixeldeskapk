@@ -245,7 +245,7 @@ private fun EnvironmentsScreen() {
                             ?: WorkspaceStorage.create(context, "Debian ARM64")
                         val result = RootfsInstaller.install(workspace)
                         workspaces = WorkspaceStorage.list(context)
-                        message = "Installed Debian ${result.validation.release} ARM64: ${result.extractedEntries} archive entries, ${result.expandedBytes.toReadableSize()} expanded. Shell execution is the next step."
+                        message = "Installed Debian ${result.validation.release} ARM64: ${result.extractedEntries} archive entries, ${result.expandedBytes.toReadableSize()} expanded. Open Terminal to test the Debian shell; physical-device runtime validation is still pending."
                     } catch (error: Exception) {
                         message = error.message ?: "Debian installation failed."
                     } finally {
