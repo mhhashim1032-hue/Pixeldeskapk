@@ -13,11 +13,14 @@
 
 ## M2 — Linux ARM64 environment
 - [x] Document Android-native PRoot packaging candidates.
-- [ ] Select and approve a maintainable, license-reviewed PRoot build source.
+- [x] Pin and build a research PRoot ARM64 candidate with an Android NDK workflow.
+- [x] Package the candidate and corresponding source/build inputs in development APKs.
+- [ ] Complete license review and physical-device startup validation.
 - [x] Add bounded, staged TAR.GZ extraction with path and symlink checks.
 - [ ] Add a pinned rootfs catalog and verify a real distribution archive end-to-end.
 - [x] Implement download integrity verification (resumable downloads remain open).
 - [ ] Implement environment lifecycle: create, start, stop, delete.
+- [x] Add native PRoot startup/version probe with timeout and bounded output.
 - [x] Implement safe app-private workspace storage layout.
 - [ ] Implement environment backup/export.
 - [ ] Verify on a physical ARM64 Android device.
