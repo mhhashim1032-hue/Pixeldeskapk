@@ -39,7 +39,7 @@ object EnvironmentRuntimeManager {
             }
         }
 
-    suspend fun startPty(
+    internal suspend fun startPty(
         context: Context,
         workspace: EnvironmentWorkspace,
         rows: Int = 32,
