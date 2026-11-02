@@ -1,7 +1,10 @@
 package com.pixeldesk.app
 
 import android.os.Bundle
+import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,8 +41,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -249,10 +256,47 @@ private fun EnvironmentsScreen() {
 private fun LibraryScreen() {
     val context = LocalContext.current
     val workspace = remember { WorkspaceStorage.list(context).firstOrNull() }
+    val scope = rememberCoroutineScope()
     var currentPath by rememberSaveable { mutableStateOf("") }
     var itemName by rememberSaveable { mutableStateOf("") }
     var refresh by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("Create folders and text files inside this private workspace.") }
+    val importPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null && workspace != null) {
+            message = "Importing selected file…"
+            scope.launch {
+                val result = runCatching {
+                    withContext(Dispatchers.IO) {
+                        val displayName = context.contentResolver.query(
+                            uri,
+                            arrayOf(OpenableColumns.DISPLAY_NAME),
+                            null,
+                            null,
+                            null
+                        )?.use { cursor ->
+                            if (cursor.moveToFirst()) cursor.getString(0) else null
+                        } ?: "imported-file"
+                        val input = context.contentResolver.openInputStream(uri)
+                            ?: error("Could not open selected file.")
+                        WorkspaceImport.copyStream(
+                            root = workspace.directory,
+                            parentPath = "downloads",
+                            displayName = displayName,
+                            input = input
+                        )
+                    }
+                }
+                result.onSuccess { imported ->
+                    refresh++
+                    message = "Imported ${imported.file.name} (${imported.bytesWritten.toReadableSize()}) into downloads."
+                }.onFailure { error ->
+                    message = error.message ?: "Import failed."
+                }
+            }
+        }
+    }
     val entries = remember(workspace, currentPath, refresh) {
         workspace?.let { runCatching { WorkspaceFiles.list(it.directory, currentPath) }.getOrDefault(emptyList()) }
             .orEmpty()
@@ -263,6 +307,10 @@ private fun LibraryScreen() {
             EmptyState(Icons.Rounded.Folder, "No workspace yet", "Prepare a Debian workspace in Environments first.")
         } else {
             Text("PRIVATE WORKSPACE  /  ${if (currentPath.isBlank()) "root" else currentPath}", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = { importPicker.launch(arrayOf("*/*")) },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Import file into downloads") }
             if (currentPath.isNotBlank()) {
                 TextButton(onClick = {
                     currentPath = currentPath.substringBeforeLast('/', "")
