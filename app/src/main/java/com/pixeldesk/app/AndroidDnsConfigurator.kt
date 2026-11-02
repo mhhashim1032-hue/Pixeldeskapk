@@ -16,6 +16,19 @@ data class DnsConfigurationResult(
 )
 
 object AndroidDnsConfigurator {
+    internal fun renderResolvConf(addresses: List<String>): String {
+        require(addresses.isNotEmpty()) { "At least one DNS server is required." }
+        addresses.forEach { address ->
+            val ipv4 = address.matches(Regex("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}")) &&
+                address.split('.').all { it.toIntOrNull() in 0..255 }
+            val ipv6 = address.contains(':') && address.matches(Regex("[0-9a-fA-F:]+"))
+            require(ipv4 || ipv6) { "Invalid DNS server address." }
+        }
+        return addresses.distinct().joinToString(separator = "\\n", postfix = "\\n") {
+            "nameserver $it"
+        } + "options timeout:2 attempts:2\\n"
+    }
+
     fun configure(context: Context, rootfs: File): DnsConfigurationResult {
         val root = rootfs.canonicalFile.toPath()
         require(rootfs.isDirectory && !Files.isSymbolicLink(rootfs.toPath())) {
@@ -44,8 +57,7 @@ object AndroidDnsConfigurator {
         require(!destination.exists() || destination.isFile || Files.isSymbolicLink(destination.toPath())) {
             "Debian /etc/resolv.conf is not a regular file."
         }
-        val content = addresses.joinToString(separator = "\n", postfix = "\n") { "nameserver $it" } +
-            "options timeout:2 attempts:2\n"
+        val content = renderResolvConf(addresses)
         val temporary = Files.createTempFile(etc.toPath(), ".pixeldesk-resolv-", ".tmp")
         try {
             temporary.toFile().writeText(content)
