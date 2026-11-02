@@ -39,9 +39,11 @@ fun LinuxTerminalScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val workspace = remember {
-        WorkspaceStorage.list(context).firstOrNull { candidate ->
+        val available = WorkspaceStorage.list(context).filter { candidate ->
             runCatching { RootfsValidator.validate(candidate.rootFilesystem) }.isSuccess
         }
+        val selectedId = EnvironmentRuntimeManager.selectedEnvironmentId()
+        available.firstOrNull { it.id == selectedId } ?: available.firstOrNull()
     }
     var session by remember { mutableStateOf<ProotInteractiveSession?>(null) }
     var command by rememberSaveable { mutableStateOf("uname -m") }
