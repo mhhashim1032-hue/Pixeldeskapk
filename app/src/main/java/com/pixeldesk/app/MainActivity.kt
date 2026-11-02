@@ -584,7 +584,10 @@ private fun SettingsScreen() {
 
 @Composable
 private fun PageScaffold(title: String, subtitle: String, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
         Spacer(Modifier.height(8.dp))
         Text(title, color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
         Text(subtitle, color = Muted, fontSize = 13.sp)
