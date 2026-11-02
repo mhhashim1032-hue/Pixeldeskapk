@@ -40,9 +40,9 @@
 - [ ] Validate a minimal desktop on the target Pixel.
 
 ## M4 — Application library
-- [ ] Package install/uninstall flows within managed Linux environment.
+- [x] Package install/uninstall flows within managed Linux environment (APT operations, validated package names, DNS setup, and curated starter catalog).
 - [ ] Add package inventory and installed-app discovery.
-- [ ] Application discovery and launch.
+- [x] Add installed-package inventory and basic environment diagnostics.\n- [ ] Application discovery and launch.
 - [ ] Per-app compatibility metadata and logs.
 
 ## M5 — Windows compatibility research
@@ -60,7 +60,7 @@
 - [ ] Threat model and dependency/license inventory.
 - [x] Unit tests for workspace, import, downloader, rootfs extraction, command runner and persistent shell fixtures.
 - [ ] Physical-device integration tests for PRoot, DNS and APT.
-- [ ] Integration and UI tests.
+- [x] Unit tests for package-name validation, curated catalog operations and DNS resolver generation.\n- [ ] Integration and UI tests.
 - [x] CI debug APK artifacts.
 - [ ] Signed release workflow after signing secrets are configured.
 
