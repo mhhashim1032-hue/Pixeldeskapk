@@ -42,7 +42,7 @@ test -s "$ARTIFACT_DIR/loader32"
 cp "$SOURCE_DIR/COPYING" "$ARTIFACT_DIR/PRoot-COPYING"
 cp "$SOURCE_DIR/third_party/talloc-2.4.2/COPYING.LESSER" "$ARTIFACT_DIR/TALLOC-LGPL-3.0.txt"
 cp "$SOURCE_DIR/third_party/talloc-2.4.2/COPYING.GPL-3" "$ARTIFACT_DIR/TALLOC-GPL-3.0.txt"
-printf '%s\\n' \\
+printf '%s\n' \\
   "source=$SOURCE_REPO" \\
   "commit=$SOURCE_COMMIT" \\
   "ndk=28.2.13676358" \\
