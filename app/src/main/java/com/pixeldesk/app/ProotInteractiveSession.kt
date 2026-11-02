@@ -46,7 +46,7 @@ class ProotInteractiveSession private constructor(
             require(timeoutMs in 1_000L..300_000L) { "Timeout must be between 1 and 300 seconds." }
 
             val started = System.nanoTime()
-            val token = "__PIXEL_DESK_\${UUID.randomUUID().toString().replace("-", "")}__"
+            val token = "__PIXEL_DESK_${UUID.randomUUID().toString().replace("-", "")}__"
             val marker = "\n$token:"
             try {
                 writer.write(command)
@@ -55,7 +55,7 @@ class ProotInteractiveSession private constructor(
             } catch (error: Exception) {
                 close()
                 return@withLock InteractiveCommandResult(
-                    command, null, "Could not write to Linux shell: \${error.message ?: "I/O error"}",
+                    command, null, "Could not write to Linux shell: ${error.message ?: "I/O error"}",
                     elapsedMs(started), sessionAlive = false
                 )
             }
@@ -134,7 +134,7 @@ class ProotInteractiveSession private constructor(
             listOf(workspace.home, workspace.downloads, workspace.temporary).forEach { directory ->
                 require(directory.canonicalFile.toPath().parent == workspaceRoot &&
                     directory.isDirectory && !java.nio.file.Files.isSymbolicLink(directory.toPath())
-                ) { "Workspace directory \${directory.name} is missing or unsafe." }
+                ) { "Workspace directory ${directory.name} is missing or unsafe." }
             }
             val validation = RootfsValidator.validate(workspace.rootFilesystem)
             require(files.executable.isFile && files.executable.canExecute() &&
@@ -144,9 +144,9 @@ class ProotInteractiveSession private constructor(
             val args = listOf(
                 "-0", "-L", "-r", workspace.rootFilesystem.canonicalPath,
                 "-w", "/root", "-b", "/dev", "-b", "/proc", "-b", "/sys",
-                "-b", "\${workspace.home.canonicalPath}:/root",
-                "-b", "\${workspace.downloads.canonicalPath}:/root/Downloads",
-                "-b", "\${workspace.temporary.canonicalPath}:/tmp",
+                "-b", "${workspace.home.canonicalPath}:/root",
+                "-b", "${workspace.downloads.canonicalPath}:/root/Downloads",
+                "-b", "${workspace.temporary.canonicalPath}:/tmp",
                 validation.shellPath, "-i"
             )
             val process = ProcessBuilder(listOf(files.executable.absolutePath) + args).apply {
