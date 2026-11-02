@@ -39,6 +39,18 @@ test -s "$ARTIFACT_DIR/proot"
 test -s "$ARTIFACT_DIR/loader"
 test -s "$ARTIFACT_DIR/loader32"
 
+cp "$SOURCE_DIR/COPYING" "$ARTIFACT_DIR/PRoot-COPYING"
+cp "$SOURCE_DIR/third_party/talloc-2.4.2/COPYING.LESSER" "$ARTIFACT_DIR/TALLOC-LGPL-3.0.txt"
+cp "$SOURCE_DIR/third_party/talloc-2.4.2/COPYING.GPL-3" "$ARTIFACT_DIR/TALLOC-GPL-3.0.txt"
+printf '%s\\n' \\
+  "source=$SOURCE_REPO" \\
+  "commit=$SOURCE_COMMIT" \\
+  "ndk=28.2.13676358" \\
+  "abi=arm64-v8a" \\
+  "purpose=separate native executable; corresponding source and build inputs embedded in APK" \\
+  > "$ARTIFACT_DIR/PROVENANCE.txt"
+(cd "$ARTIFACT_DIR" && sha256sum proot loader loader32 > SHA256SUMS)
+
 cp "$ARTIFACT_DIR/proot" "$JNI_DIR/libproot.so"
 cp "$ARTIFACT_DIR/loader" "$JNI_DIR/libproot_loader.so"
 cp "$ARTIFACT_DIR/loader32" "$JNI_DIR/libproot_loader32.so"
