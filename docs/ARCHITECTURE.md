@@ -154,3 +154,6 @@ The initial backend review is recorded in `docs/DESKTOP_BACKEND_EVALUATION.md`. 
 ## External desktop package diagnostics
 
 Settings can detect the separately installed Android packages `com.termux` and `com.termux.x11` through Android package visibility queries. This is informational only: detecting both APKs does not verify the Termux companion package, a usable X11 socket, a signature-checked server launch path, or PRoot access to that socket. The app therefore does not launch a desktop session from this screen. Setup links open the official upstream release page only after an explicit user tap.
+
+
+The Settings diagnostic intentionally checks Android package visibility only. It does not claim that Termux's companion command is installed, that the X11 socket is reachable, or that a desktop session can be launched.
