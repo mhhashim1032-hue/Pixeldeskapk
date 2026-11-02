@@ -59,7 +59,7 @@ cp "$ARTIFACT_DIR/TALLOC-LGPL-3.0.txt" "$ASSET_DIR/licenses/TALLOC-LGPL-3.0.txt"
 cp "$ARTIFACT_DIR/TALLOC-GPL-3.0.txt" "$ASSET_DIR/licenses/TALLOC-GPL-3.0.txt"
 cp "$ARTIFACT_DIR/PROVENANCE.txt" "$ASSET_DIR/licenses/PRoot-PROVENANCE.txt"
 
-tar --exclude='.git' -czf "$ASSET_DIR/third-party/proot-corresponding-source.tar.gz" \
+tar --exclude='.git' -cf "$ASSET_DIR/third-party/proot-corresponding-source.tar" \
   -C "$ROOT_DIR/native" proot-src proot-build proot-artifacts
 
 cat > "$ASSET_DIR/licenses/PRoot-NOTICE.txt" <<'NOTICE'
