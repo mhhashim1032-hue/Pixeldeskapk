@@ -51,7 +51,7 @@ object LinuxPackageManager {
 
     fun desktopAppsOperation() = PackageOperation(
         title = "Discover installed Linux applications",
-        command = """find /usr/share/applications /usr/local/share/applications "$HOME/.local/share/applications" -type f -name '*.desktop' -print 2>/dev/null | sort -u | while IFS= read -r file; do printf '\n__PIXEL_DESK_ENTRY__\nPATH=%s\n' "$file"; grep -E '^(Name|Exec|Icon|Type|NoDisplay|Hidden|Terminal)=' "$file" || true; done""",
+        command = """find /usr/share/applications /usr/local/share/applications "${'$'}HOME/.local/share/applications" -type f -name '*.desktop' -print 2>/dev/null | sort -u | while IFS= read -r file; do printf '\n__PIXEL_DESK_ENTRY__\nPATH=%s\n' "${'$'}file"; grep -E '^(Name|Exec|Icon|Type|NoDisplay|Hidden|Terminal)=' "${'$'}file" || true; done""",
         timeoutMs = 60_000L
     )
 
