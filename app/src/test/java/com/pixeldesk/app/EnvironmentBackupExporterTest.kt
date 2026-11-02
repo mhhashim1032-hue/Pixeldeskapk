@@ -88,6 +88,11 @@ class EnvironmentBackupExporterTest {
             assertEquals("usr/bin", links["debian-arm64/rootfs/bin"])
             assertEquals("/usr/lib", links["debian-arm64/rootfs/lib"])
         } finally {
+            // File.deleteRecursively follows FileTreeWalk semantics and is not
+            // safe for an absolute symlink in this fixture. Remove both links
+            // explicitly before recursively deleting the temporary workspace.
+            Files.deleteIfExists(File(fixture.workspace.rootFilesystem, "bin").toPath())
+            Files.deleteIfExists(File(fixture.workspace.rootFilesystem, "lib").toPath())
             fixture.root.deleteRecursively()
         }
     }
