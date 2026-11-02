@@ -83,3 +83,12 @@ References:
 - Termux execution model and Bionic/NDK details: https://github.com/termux/termux-packages/wiki/Termux-execution-environment
 - Termux PRoot package recipe: https://github.com/termux/termux-packages/blob/master/packages/proot/build.sh
 - PRoot static build research candidate: https://github.com/berilevi/proot-static
+
+
+## Native PRoot runtime probe
+
+`scripts/prepare-proot-native.sh` builds a pinned Android ARM64 PRoot candidate with NDK 28.2.13676358, places the executable and companion loaders under `jniLibs/arm64-v8a/`, and embeds the corresponding source/build inputs plus license notices in the APK assets. The Gradle packaging configuration forces native payload extraction so the app can locate the executable in `ApplicationInfo.nativeLibraryDir`.
+
+`ProotRuntimeProbe` checks the ARM64 ABI, verifies the executable and loader files exist, then starts PRoot with the explicit `PROOT_LOADER` path and its version flag. The command runs off the UI thread with a timeout and bounded output capture. This verifies only native process startup; it does not prove rootfs installation, shell execution, graphics, Windows compatibility or physical-device support.
+
+The APK build pipeline and PRoot source archive must remain paired for redistribution. The source archive includes the pinned source tree and build intermediates needed for the static LGPL-linked payload review. Physical Pixel validation remains mandatory before enabling environment installation.
