@@ -44,3 +44,8 @@ gradle lint
 The foundation app has no network permission and requires no account or cloud runtime. Environment files are intended to remain on-device by default. Third-party components will be reviewed for license and redistribution requirements before bundling.
 
 No repository-wide license has been selected yet. Do not assume this repository grants redistribution rights for third-party components.
+
+
+## Native runtime status
+
+Development APK CI now builds a pinned Android ARM64 PRoot candidate and includes a Settings diagnostic to test whether the native executable starts. This is a runtime bootstrap probe only: Linux distributions are not yet installed, and no desktop session or Windows EXE execution is available. The APK also includes the corresponding PRoot source/build archive and third-party license notices.
