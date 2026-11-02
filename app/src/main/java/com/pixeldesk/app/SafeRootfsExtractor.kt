@@ -166,7 +166,7 @@ object SafeRootfsExtractor {
         var parent = target.parent ?: error("Archive entry has no parent.")
         val ancestors = mutableListOf<Path>()
         while (parent != root && parent.startsWith(root)) {
-            ancestors += parent
+            ancestors.add(parent)
             parent = parent.parent ?: break
         }
         require(parent == root) { "Archive path escapes the extraction directory." }
