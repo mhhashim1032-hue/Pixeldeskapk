@@ -64,7 +64,10 @@ object RootfsValidator {
         require(osRelease.isFile && osRelease.canRead()) { "Root filesystem is missing /etc/os-release." }
         val metadata = parseOsRelease(osRelease.readLines())
         val id = metadata["ID"]?.trim('"', '\'')?.lowercase()
+            ?: error("Root filesystem os-release has no ID.")
         val version = metadata["VERSION_ID"]?.trim('"', '\'')
+            ?: error("Root filesystem os-release has no VERSION_ID.")
+        require(expected.architecture == "arm64") { "This validator currently supports ARM64 only." }
         require(id == "debian") { "Expected Debian rootfs; found ${id ?: "unknown"}." }
         require(version == expected.release) {
             "Expected Debian ${expected.release}; found ${version ?: "unknown"}."
@@ -112,10 +115,10 @@ object RootfsValidator {
         require(header[0] == 0x7f.toByte() && header[1] == 'E'.code.toByte() &&
             header[2] == 'L'.code.toByte() && header[3] == 'F'.code.toByte()
         ) { "Root filesystem shell is not an ELF executable." }
-        require(header[4].toInt() and 0xff == ELF_CLASS_64) {
+        require((header[4].toInt() and 0xff) == ELF_CLASS_64) {
             "Root filesystem shell is not a 64-bit executable."
         }
-        require(header[5].toInt() and 0xff == ELF_DATA_LITTLE_ENDIAN) {
+        require((header[5].toInt() and 0xff) == ELF_DATA_LITTLE_ENDIAN) {
             "Root filesystem shell has an unsupported ELF byte order."
         }
         val machine = (header[18].toInt() and 0xff) or
