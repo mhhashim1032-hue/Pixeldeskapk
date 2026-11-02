@@ -69,8 +69,11 @@ class ProotInteractiveSession private constructor(
                     pending.append(chunk)
                     val markerIndex = pending.indexOf(marker)
                     if (markerIndex >= 0) {
-                        appendBounded(captured, pending.substring(0, markerIndex))
-                        val statusStart = markerIndex + marker.length
+                        if (markerIndex > 0) {
+                            appendBounded(captured, pending.substring(0, markerIndex))
+                            pending.delete(0, markerIndex)
+                        }
+                        val statusStart = marker.length
                         val statusEnd = pending.indexOf("\n", statusStart)
                         if (statusEnd >= 0) {
                             exitCode = pending.substring(statusStart, statusEnd).trim().toIntOrNull()
