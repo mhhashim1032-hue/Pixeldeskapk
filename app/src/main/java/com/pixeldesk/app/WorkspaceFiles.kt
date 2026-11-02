@@ -16,7 +16,11 @@ object WorkspaceFiles {
     fun list(root: File, relativePath: String = ""): List<WorkspaceEntry> {
         val directory = resolve(root, relativePath)
         require(directory.isDirectory) { "Selected path is not a directory." }
+        val canonicalRoot = root.canonicalFile
         return directory.listFiles()
+            ?.filter { file ->
+                file.canonicalFile.path.startsWith(canonicalRoot.path + File.separator)
+            }
             ?.sortedWith(compareBy<File> { !it.isDirectory }.thenBy { it.name.lowercase() })
             ?.map { file ->
                 WorkspaceEntry(
