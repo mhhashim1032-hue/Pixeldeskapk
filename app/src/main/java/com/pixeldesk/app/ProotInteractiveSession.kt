@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 
 data class InteractiveCommandResult(
     val command: String,
@@ -123,11 +124,12 @@ class ProotInteractiveSession private constructor(
         private const val MAX_COMMAND_CHARS = 8_192
         private const val MAX_OUTPUT_CHARS = 64 * 1024
 
-        suspend fun start(context: Context, workspace: EnvironmentWorkspace): ProotInteractiveSession {
-            val files = ProotRuntimeProbe.locate(context)
-                ?: error("The native ARM64 PRoot runtime is unavailable.")
-            return start(files, workspace)
-        }
+        suspend fun start(context: Context, workspace: EnvironmentWorkspace): ProotInteractiveSession =
+            withContext(Dispatchers.IO) {
+                val files = ProotRuntimeProbe.locate(context)
+                    ?: error("The native ARM64 PRoot runtime is unavailable.")
+                start(files, workspace)
+            }
 
         internal fun start(files: ProotRuntimeFiles, workspace: EnvironmentWorkspace): ProotInteractiveSession {
             val workspaceRoot = workspace.directory.canonicalFile.toPath()
