@@ -100,18 +100,20 @@ object WorkspaceStorage {
      * Files.walkFileTree does not follow symbolic links, so linked paths are unlinked
      * rather than traversed.
      */
-    fun delete(context: Context, workspace: EnvironmentWorkspace): Boolean {
-        val baseFile = File(context.filesDir, "environments")
+    fun delete(context: Context, workspace: EnvironmentWorkspace): Boolean =
+        deleteWorkspace(File(context.filesDir, "environments"), workspace.directory, workspace.id)
+
+    internal fun deleteWorkspace(baseFile: File, workspaceDirectory: File, environmentId: String): Boolean {
         require(!Files.isSymbolicLink(baseFile.toPath()) && baseFile.isDirectory) {
             "The environments directory is missing or unsafe."
         }
-        require(validId.matches(workspace.id)) { "Invalid environment identifier." }
-        require(!Files.isSymbolicLink(workspace.directory.toPath())) {
+        require(validId.matches(environmentId)) { "Invalid environment identifier." }
+        require(!Files.isSymbolicLink(workspaceDirectory.toPath())) {
             "Environment directory is a symbolic link."
         }
         val base = baseFile.canonicalFile
-        val target = workspace.directory.canonicalFile
-        require(target.parentFile == base && target.name == workspace.id && target != base) {
+        val target = workspaceDirectory.canonicalFile
+        require(target.parentFile == base && target.name == environmentId && target != base) {
             "Environment directory is outside the app-private environments folder."
         }
         if (!target.exists()) return false
