@@ -54,3 +54,6 @@ Development APK CI builds and packages a pinned Android ARM64 PRoot candidate, i
 ## Linux desktop integration status
 
 Termux:X11 has been evaluated as a possible optional backend. It is not bundled, and no Linux graphical desktop is currently available in PIXEL DESK. The two-app setup, GPL-3.0 licensing, Android app sandbox, PRoot shared-`/tmp` socket and external process lifecycle remain integration gates. See [desktop backend evaluation](docs/DESKTOP_BACKEND_EVALUATION.md).
+
+
+Settings includes optional Termux / Termux:X11 package detection and a link to the official release page. This is setup diagnostics only; no graphical desktop session can currently be launched by PIXEL DESK.
