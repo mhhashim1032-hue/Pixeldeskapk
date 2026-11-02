@@ -96,45 +96,6 @@ object WorkspaceStorage {
         }.sortedBy { it.displayName.lowercase(Locale.ROOT) }
     }
     /**
-     * Deletes only the selected workspace below this app's environments directory.
-     * Files.walkFileTree does not follow symbolic links, so linked paths are unlinked
-     * rather than traversed.
-     */
-    fun delete(context: Context, workspace: EnvironmentWorkspace): Boolean =
-        deleteWorkspace(File(context.filesDir, "environments"), workspace.directory, workspace.id)
-
-    internal fun deleteWorkspace(baseFile: File, workspaceDirectory: File, environmentId: String): Boolean {
-        require(!Files.isSymbolicLink(baseFile.toPath()) && baseFile.isDirectory) {
-            "The environments directory is missing or unsafe."
-        }
-        require(validId.matches(environmentId)) { "Invalid environment identifier." }
-        require(!Files.isSymbolicLink(workspaceDirectory.toPath())) {
-            "Environment directory is a symbolic link."
-        }
-        val base = baseFile.canonicalFile
-        val target = workspaceDirectory.canonicalFile
-        require(target.parentFile == base && target.name == environmentId && target != base) {
-            "Environment directory is outside the app-private environments folder."
-        }
-        if (!target.exists()) return false
-
-        Files.walkFileTree(target.toPath(), object : SimpleFileVisitor<Path>() {
-            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                Files.delete(file)
-                return FileVisitResult.CONTINUE
-            }
-
-            override fun postVisitDirectory(directory: Path, error: java.io.IOException?): FileVisitResult {
-                if (error != null) throw error
-                Files.delete(directory)
-                return FileVisitResult.CONTINUE
-            }
-        })
-        return true
-    }
-
-
-    /**
      * Deletes one environment below this app's environments directory.
      * Files.walkFileTree does not follow symbolic links, so linked paths are
      * unlinked rather than traversed.
