@@ -11,7 +11,7 @@ import org.junit.Test
 class ProotCommandRunnerTest {
     @Test
     fun executesCommandAndCapturesBothOutputStreams() = runBlocking {
-        val fixture = fixture("printf 'linux stdout\\n'; printf 'linux stderr\\n' >&2; exit 0")
+        val fixture = fixture("printf 'linux stdout\n'; printf 'linux stderr\n' >&2; exit 0")
         try {
             val result = ProotCommandRunner.run(
                 fixture.files,
@@ -102,7 +102,7 @@ class ProotCommandRunnerTest {
 
         File(rootfs, "etc").mkdirs()
         File(rootfs, "usr/bin").mkdirs()
-        File(rootfs, "etc/os-release").writeText("ID=debian\\nVERSION_ID=\"12\"\\n")
+        File(rootfs, "etc/os-release").writeText("ID=debian\nVERSION_ID=\"12\"\n")
         File(rootfs, "usr/bin/dpkg").writeText("dpkg placeholder")
         val elf = ByteArray(20)
         elf[0] = 0x7f
@@ -116,7 +116,7 @@ class ProotCommandRunnerTest {
 
         val runtimeDir = File(root, "runtime").apply { mkdirs() }
         val executable = File(runtimeDir, "fake-proot").apply {
-            writeText("#!/bin/sh\\n$prootBody\\n")
+            writeText("#!/bin/sh\n$prootBody\n")
             setExecutable(true)
         }
         val loader = File(runtimeDir, "loader").apply { writeText("loader") }
