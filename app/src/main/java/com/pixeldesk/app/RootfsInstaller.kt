@@ -3,7 +3,6 @@ package com.pixeldesk.app
 import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Files
-import java.nio.file.LinkOption
 
 data class RootfsArtifact(
     val id: String,
@@ -141,11 +140,15 @@ object RootfsInstaller {
         onProgress: (downloaded: Long, total: Long?) -> Unit = { _, _ -> }
     ): RootfsInstallResult {
         val workspaceRoot = workspace.directory.canonicalFile
-        require(workspace.rootFilesystem.absoluteFile.parentFile?.canonicalFile == workspaceRoot) {
-            "Root filesystem destination is outside the environment workspace."
+        require(workspace.rootFilesystem.canonicalFile.parentFile == workspaceRoot &&
+            !Files.isSymbolicLink(workspace.rootFilesystem.toPath())
+        ) {
+            "Root filesystem destination is outside the environment workspace or is a symlink."
         }
-        require(workspace.temporary.absoluteFile.parentFile?.canonicalFile == workspaceRoot) {
-            "Temporary directory is outside the environment workspace."
+        require(workspace.temporary.canonicalFile.parentFile == workspaceRoot &&
+            !Files.isSymbolicLink(workspace.temporary.toPath())
+        ) {
+            "Temporary directory is outside the environment workspace or is a symlink."
         }
         require(workspace.temporary.isDirectory) { "Workspace temporary directory is missing." }
 
