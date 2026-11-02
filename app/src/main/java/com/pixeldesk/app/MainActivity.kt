@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -35,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -201,11 +203,43 @@ private fun FeatureCard(title: String, subtitle: String, status: String, accent:
 
 @Composable
 private fun EnvironmentsScreen() {
-    PageScaffold("Environments", "Choose the runtime you want to set up.") {
-        FeatureCard("Linux ARM64", "Debian-based userspace is the first implementation target.", "PLANNED", Violet)
+    val context = LocalContext.current
+    var workspaces by remember { mutableStateOf(WorkspaceStorage.list(context)) }
+    var message by remember { mutableStateOf("No local workspace has been prepared yet.") }
+
+    PageScaffold("Environments", "Prepare local storage before installing a Linux userspace.") {
+        FeatureCard(
+            "Linux ARM64",
+            "Debian-based userspace is the first implementation target.",
+            if (workspaces.isEmpty()) "NEXT STEP" else "STORAGE READY",
+            Violet
+        )
+        Button(
+            onClick = {
+                runCatching {
+                    WorkspaceStorage.create(context, "Debian ARM64")
+                }.onSuccess { workspace ->
+                    workspaces = WorkspaceStorage.list(context)
+                    message = "Workspace prepared at app-private storage: ${workspace.id}"
+                }.onFailure { error ->
+                    message = error.message ?: "Could not prepare workspace."
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (workspaces.isEmpty()) "Prepare Debian workspace" else "Repair / prepare workspace")
+        }
+        Text(message, color = Muted, fontSize = 12.sp)
+        workspaces.forEach { workspace ->
+            FeatureCard(
+                workspace.displayName,
+                "Private storage folders are ready. Linux is not installed yet.",
+                "STORAGE ONLY",
+                Cyan
+            )
+        }
         FeatureCard("Windows compatibility", "Wine and translation layers; application compatibility varies.", "EXPERIMENTAL", Cyan)
         FeatureCard("Virtual machines", "QEMU research; device support and performance are not yet verified.", "RESEARCH", Muted)
-        Text("No operating environment has been installed by this foundation build.", color = Muted, fontSize = 12.sp)
     }
 }
 
