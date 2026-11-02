@@ -30,7 +30,7 @@
 - [x] Configure guest DNS from Android active-network DNS servers.
 - [x] Add safe APT update, install, remove and cache-clean operations.
 - [x] Implement safe app-private workspace storage layout.
-- [ ] Implement environment backup/export.
+- [x] Implement streamed environment backup/export with a format manifest, symlink-safe traversal and a compressed-archive SHA-256 digest.
 - [ ] Verify on a physical ARM64 Android device.
 
 ## M3 — Linux graphical desktop

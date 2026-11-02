@@ -6,7 +6,7 @@ PIXEL DESK targets ARM64 Android devices, with the Google Pixel 9 Pro XL as the 
 
 ## Current status
 
-The repository now contains a native Kotlin/Jetpack Compose app, a pinned Debian 12 Bookworm ARM64 rootfs installer, a bundled Android ARM64 PRoot candidate, a persistent shell, environment lifecycle controls, Android-derived guest DNS configuration, an APT software manager, secure archive extraction and GitHub Actions build workflows.
+The repository now contains a native Kotlin/Jetpack Compose app, a pinned Debian 12 Bookworm ARM64 rootfs installer, a bundled Android ARM64 PRoot candidate, a persistent shell, environment lifecycle controls, verified TAR.GZ environment backup/export, Android-derived guest DNS configuration, an APT software manager, secure archive extraction and GitHub Actions build workflows.
 
 **Current limitation:** the app now includes a bounded PRoot command runner and a persistent non-PTY Debian shell, with CI tests for shell state, output, exit codes and timeouts. These are not yet validated against the real Debian rootfs on a physical Pixel. The graphical desktop, Windows executables and virtual machines are not working features yet.
 
@@ -48,4 +48,4 @@ No repository-wide license has been selected yet. Do not assume this repository 
 
 ## Native runtime status
 
-Development APK CI builds and packages a pinned Android ARM64 PRoot candidate, includes the corresponding source/build archive and license notices, and exposes a Settings diagnostic to test native startup. The Environments screen can install a pinned Debian 12 Bookworm ARM64 rootfs with SHA-256 verification, bounded extraction and ELF architecture validation. The persistent shell, environment manager and APT software manager are implemented and CI-tested with controlled fixtures. Real PRoot-to-Debian execution, DNS resolution and package downloads on the Pixel remain unverified. No graphical desktop or Windows EXE execution is available.
+Development APK CI builds and packages a pinned Android ARM64 PRoot candidate, includes the corresponding source/build archive and license notices, and exposes a Settings diagnostic to test native startup. The Environments screen can install a pinned Debian 12 Bookworm ARM64 rootfs with SHA-256 verification, bounded extraction and ELF architecture validation. The persistent shell, environment manager, APT software manager and streamed TAR.GZ backup/export are implemented and CI-tested with controlled fixtures. Backups include a format manifest and a SHA-256 digest of the complete compressed archive. Real PRoot-to-Debian execution, DNS resolution and package downloads on the Pixel remain unverified. No graphical desktop or Windows EXE execution is available.
