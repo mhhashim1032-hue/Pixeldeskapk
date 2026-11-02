@@ -46,11 +46,11 @@ jobs:
 
       - name: Build static Android ARM64 PRoot
         working-directory: native/proot-src
-        env:
-          NDK: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
-          OUT: ${{ github.workspace }}/native/proot-build
-          REPO_ARTIFACT_DIR: ${{ github.workspace }}/native/proot-artifacts
-        run: bash tools/build-static-aarch64.sh
+        run: |
+          export NDK="$ANDROID_HOME/ndk/28.2.13676358"
+          export OUT="$GITHUB_WORKSPACE/native/proot-build"
+          export REPO_ARTIFACT_DIR="$GITHUB_WORKSPACE/native/proot-artifacts"
+          bash tools/build-static-aarch64.sh
 
       - name: Validate native artifacts and record provenance
         run: |
