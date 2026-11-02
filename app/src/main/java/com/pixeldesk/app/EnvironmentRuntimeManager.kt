@@ -25,7 +25,10 @@ object EnvironmentRuntimeManager {
     ): ProotInteractiveSession = mutex.withLock {
         check(!shuttingDown) { "PIXEL DESK is shutting down; retry after it resumes." }
         val existing = sessions[workspace.id]
-        if (existing?.isAlive == true) return@withLock existing
+        if (existing?.isAlive == true) {
+            selectedId = workspace.id
+            return@withLock existing
+        }
         existing?.close()
         sessions.remove(workspace.id)
         ProotInteractiveSession.start(context, workspace).also { session ->
