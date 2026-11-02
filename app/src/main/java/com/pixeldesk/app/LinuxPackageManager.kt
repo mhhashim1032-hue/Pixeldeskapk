@@ -7,6 +7,39 @@ data class PackageOperation(
 )
 
 object LinuxPackageManager {
+
+data class LinuxQuickPackage(val name: String, val description: String, val category: String)
+
+    val quickPackages = listOf(
+        LinuxQuickPackage("nano", "Simple terminal text editor", "Editors"),
+        LinuxQuickPackage("vim-tiny", "Lightweight modal text editor", "Editors"),
+        LinuxQuickPackage("curl", "HTTP and API transfer utility", "Network"),
+        LinuxQuickPackage("wget", "Download files from the command line", "Network"),
+        LinuxQuickPackage("git", "Version control for source code", "Development"),
+        LinuxQuickPackage("python3", "Python 3 interpreter", "Development"),
+        LinuxQuickPackage("htop", "Interactive process monitor", "System"),
+        LinuxQuickPackage("unzip", "Extract ZIP archives", "Utilities"),
+        LinuxQuickPackage("zip", "Create ZIP archives", "Utilities"),
+        LinuxQuickPackage("tree", "Display directory trees", "Utilities")
+    )
+
+    fun installedPackagesOperation() = PackageOperation(
+        title = "List installed packages",
+        command = "dpkg-query -W | head -n 120",
+        timeoutMs = 60_000L
+    )
+
+    fun systemInfoOperation() = PackageOperation(
+        title = "System information",
+        command = "dpkg --print-architecture; uname -a; df -h /",
+        timeoutMs = 30_000L
+    )
+
+    fun quickInstallOperation(packageName: String): PackageOperation {
+        require(quickPackages.any { it.name == packageName }) { "Package is not in the curated software list." }
+        return installOperation(packageName)
+    }
+
     private val packageNamePattern = Regex("[a-z0-9][a-z0-9+.-]{0,127}")
     private const val MAX_PACKAGES_PER_OPERATION = 20
 
