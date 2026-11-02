@@ -30,7 +30,7 @@ class WorkspaceStorageLifecycleTest {
         val outside = createTempDir(prefix = "pixeldesk-outside-")
         try {
             assertTrue(runCatching {
-                WorkspaceStorage.deleteWorkspace(base, outside, outside.name)
+                WorkspaceStorage.deleteWorkspace(base, outside, "debian-arm64")
             }.isFailure)
             assertTrue(outside.exists())
         } finally {
