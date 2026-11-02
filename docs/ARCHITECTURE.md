@@ -67,3 +67,19 @@ References:
 `SafeRootfsExtractor` supports gzip-compressed TAR archives and extracts into a fresh staging directory before promotion. It enforces configurable entry-count, total expanded-size and per-file limits; rejects absolute archive paths, parent traversal, duplicate paths, hard links and special filesystem nodes; and validates symbolic-link targets remain inside the rootfs. Absolute Linux symlinks are rewritten as equivalent relative links rooted inside the extraction directory, so common paths such as `/bin` do not become host-absolute Android paths. File ownership and privileged mode bits are not restored.
 
 The initial implementation deliberately rejects hard links and device nodes. This may exclude some distribution archives; the installer must select and test a compatible rootfs artifact rather than silently weakening these checks. Extraction is not yet connected to the UI or a distribution catalog.
+
+
+## Native PRoot packaging investigation
+
+The next runtime adapter will be an Android-native ARM64 PRoot build, not a Linux/glibc executable. Termux documents that its Android-native programs use Bionic and the Android NDK; its PRoot package build recipe also identifies Android-specific shared-memory support and Talloc as dependencies.
+
+For Android app packaging, the executable and its companion loader need to be placed in a location from which the app can execute native code. The current candidate is an ABI-specific `jniLibs/arm64-v8a` payload, extracted by Android into `ApplicationInfo.nativeLibraryDir`, with packaging configured to extract native libraries as real files. The executable may need an Android-compatible `lib*.so` filename even though it is launched as a process. This must be proven in an instrumentation/device test before bundling.
+
+The PRoot process adapter must set an explicit loader path (rather than relying on Termux's private prefix), use only app-private rootfs/home/tmp paths, invoke PRoot with link-to-symlink handling for guest hard-link operations, and capture stdout, stderr, exit status and cancellation. No environment is considered installed until a minimal ARM64 command succeeds on a physical device.
+
+The static Android PRoot build in `berilevi/proot-static` is a research candidate, not yet an approved dependency. Its source revision, bundled Talloc licensing, static-link redistribution obligations, build reproducibility and runtime behaviour must be reviewed before its output is shipped. Prefer a reproducible build from maintained upstream source where practical.
+
+References:
+- Termux execution model and Bionic/NDK details: https://github.com/termux/termux-packages/wiki/Termux-execution-environment
+- Termux PRoot package recipe: https://github.com/termux/termux-packages/blob/master/packages/proot/build.sh
+- PRoot static build research candidate: https://github.com/berilevi/proot-static
