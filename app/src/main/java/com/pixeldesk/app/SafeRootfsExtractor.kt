@@ -185,6 +185,9 @@ object SafeRootfsExtractor {
     private fun resolveHardLinkTarget(root: Path, linkName: String): Path {
         require(linkName.isNotBlank()) { "Archive contains an empty hard-link target." }
         val supplied = Paths.get(linkName)
+        require(!supplied.any { it.toString() == ".." }) {
+            "Hard-link path traversal is not allowed."
+        }
         val target = if (supplied.isAbsolute) {
             root.resolve(supplied.toString().trimStart('/')).normalize()
         } else {
@@ -192,9 +195,6 @@ object SafeRootfsExtractor {
         }
         require(target != root && target.startsWith(root)) {
             "Hard-link target escapes the extraction directory."
-        }
-        require(!target.any { it.toString() == ".." }) {
-            "Hard-link path traversal is not allowed."
         }
         require(Files.exists(target, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
             "Hard-link target must appear earlier in the archive."
