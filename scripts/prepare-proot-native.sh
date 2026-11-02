@@ -69,9 +69,9 @@ provided under LGPL-3.0 (with the accompanying GPL-3.0 license text).
 See the license files in this directory.
 
 The corresponding source and relinkable build inputs for this exact pinned build
-are included at third-party/proot-corresponding-source.tar.gz.
+are included at third-party/proot-corresponding-source.tar.
 The source revision and NDK version are recorded in PRoot-PROVENANCE.txt.
 NOTICE
 
 echo "Prepared PRoot native payload:"
-ls -lh "$JNI_DIR" "$ASSET_DIR/third-party/proot-corresponding-source.tar.gz"
+ls -lh "$JNI_DIR" "$ASSET_DIR/third-party/proot-corresponding-source.tar"
