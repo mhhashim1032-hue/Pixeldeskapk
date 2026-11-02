@@ -3,6 +3,9 @@ package com.pixeldesk.app
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.cancelAndJoin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -50,6 +53,21 @@ class ProotInteractiveSessionTest {
             val result = session.execute("exit")
             assertFalse(result.sessionAlive)
             assertFalse(result.timedOut)
+        } finally {
+            session.close()
+            fixture.root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun callerCancellationTerminatesPersistentShell() = runBlocking {
+        val fixture = fixture()
+        val session = ProotInteractiveSession.start(fixture.files, fixture.workspace)
+        try {
+            val command = launch { session.execute("exec sleep 10") }
+            delay(200)
+            command.cancelAndJoin()
+            assertFalse(session.isAlive)
         } finally {
             session.close()
             fixture.root.deleteRecursively()
