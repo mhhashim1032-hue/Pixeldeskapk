@@ -152,6 +152,35 @@ fun LinuxSoftwareScreen() {
                 enabled = session != null && !running
             ) { Text("Clean package cache") }
 
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(
+                    onClick = { runOperation(LinuxPackageManager.installedPackagesOperation()) },
+                    enabled = session != null && !running
+                ) { Text("Installed packages") }
+                TextButton(
+                    onClick = { runOperation(LinuxPackageManager.systemInfoOperation()) },
+                    enabled = session != null && !running
+                ) { Text("System info") }
+            }
+
+            Text("QUICK INSTALL", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            LinuxPackageManager.quickPackages.forEach { item ->
+                Row(
+                    Modifier.fillMaxWidth().background(Color(0xFF151A28), RoundedCornerShape(12.dp)).padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(item.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text(item.description, color = Color(0xFF9AA4B8), fontSize = 10.sp)
+                        Text(item.category.uppercase(), color = Color(0xFF67DCE8), fontSize = 9.sp)
+                    }
+                    TextButton(
+                        onClick = { runOperation(LinuxPackageManager.quickInstallOperation(item.name)) },
+                        enabled = session != null && !running
+                    ) { Text("Install") }
+                }
+            }
+
             if (session == null && workspace != null && !running) {
                 TextButton(onClick = {
                     scope.launch {
