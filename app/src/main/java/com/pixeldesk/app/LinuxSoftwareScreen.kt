@@ -18,7 +18,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,7 +67,7 @@ fun LinuxSoftwareScreen() {
                 } else {
                     dns.message + " Package downloads may fail until the device is online."
                 }
-                session = ProotInteractiveSession.start(context, workspace)
+                session = EnvironmentRuntimeManager.start(context, workspace)
                 status = "CONNECTED"
                 output = "Connected to ${workspace.displayName}.\nRefresh package indexes before installing software."
             } catch (error: Exception) {
@@ -78,9 +77,6 @@ fun LinuxSoftwareScreen() {
         }
     }
 
-    DisposableEffect(session) {
-        onDispose { session?.close() }
-    }
 
     fun runOperation(operation: PackageOperation) {
         val activeSession = session ?: return
@@ -161,7 +157,7 @@ fun LinuxSoftwareScreen() {
                                 AndroidDnsConfigurator.configure(context, workspace.rootFilesystem)
                             }
                             networkStatus = dns.message
-                            session = ProotInteractiveSession.start(context, workspace)
+                            session = EnvironmentRuntimeManager.start(context, workspace)
                             status = "CONNECTED"
                         } catch (error: Exception) {
                             status = "CONNECTION ERROR"
