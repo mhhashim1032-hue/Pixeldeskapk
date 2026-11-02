@@ -289,6 +289,7 @@ private fun LibraryScreen() {
                     }
                 }
                 result.onSuccess { imported ->
+                    currentPath = "downloads"
                     refresh++
                     message = "Imported ${imported.file.name} (${imported.bytesWritten.toReadableSize()}) into downloads."
                 }.onFailure { error ->
