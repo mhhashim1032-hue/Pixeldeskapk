@@ -69,7 +69,7 @@ object ProotCommandRunner {
         ) { "The native PRoot executable or loader is missing." }
 
         val args = buildArguments(workspace, validation.shellPath, command)
-        executeProcess(files, args, command, timeoutMs)
+        executeProcess(files, args, command, workspace.temporary.canonicalPath, timeoutMs)
     }
 
     internal fun buildArguments(
@@ -102,6 +102,7 @@ object ProotCommandRunner {
         files: ProotRuntimeFiles,
         arguments: List<String>,
         command: String,
+        hostTemporaryDirectory: String,
         timeoutMs: Long
     ): LinuxCommandResult = coroutineScope {
         val startedAt = System.nanoTime()
@@ -111,6 +112,7 @@ object ProotCommandRunner {
                 files.loader32?.let { environment()["PROOT_LOADER_32"] = it.absolutePath }
                 environment()["HOME"] = "/root"
                 environment()["TMPDIR"] = "/tmp"
+                environment()["PROOT_TMP_DIR"] = hostTemporaryDirectory
                 environment()["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
                 environment()["LANG"] = "C.UTF-8"
                 environment()["TERM"] = "xterm-256color"
@@ -125,6 +127,7 @@ object ProotCommandRunner {
             )
         }
 
+        process.outputStream.close()
         val stdoutTask = async(Dispatchers.IO) {
             process.inputStream.use { it.readLimitedUtf8(MAX_OUTPUT_BYTES) }
         }
