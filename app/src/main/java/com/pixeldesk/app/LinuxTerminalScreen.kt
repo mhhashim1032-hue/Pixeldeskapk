@@ -18,7 +18,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,7 +56,7 @@ fun LinuxTerminalScreen() {
             output = "Install Debian 12 ARM64 from Environments before opening the terminal."
         } else {
             try {
-                session = ProotInteractiveSession.start(context, workspace)
+                session = EnvironmentRuntimeManager.start(context, workspace)
                 status = "CONNECTED"
                 output = "Connected to ${workspace.displayName}\nTry: uname -m"
             } catch (error: Exception) {
@@ -67,9 +66,6 @@ fun LinuxTerminalScreen() {
         }
     }
 
-    DisposableEffect(session) {
-        onDispose { session?.close() }
-    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF090B12)) {
         Column(
@@ -124,9 +120,11 @@ fun LinuxTerminalScreen() {
                 }
                 TextButton(
                     onClick = {
-                        session?.close()
-                        session = null
-                        status = "DISCONNECTED"
+                        scope.launch {
+                            workspace?.let { EnvironmentRuntimeManager.stop(it.id) }
+                            session = null
+                            status = "DISCONNECTED"
+                        }
                     },
                     enabled = session != null && !running
                 ) { Text("Stop") }
@@ -139,7 +137,7 @@ fun LinuxTerminalScreen() {
                     scope.launch {
                         status = "CONNECTING"
                         try {
-                            session = ProotInteractiveSession.start(context, workspace)
+                            session = EnvironmentRuntimeManager.start(context, workspace)
                             status = "CONNECTED"
                             output += "\nShell reconnected."
                         } catch (error: Exception) {
