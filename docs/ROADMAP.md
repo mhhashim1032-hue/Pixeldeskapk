@@ -71,7 +71,8 @@
 - [ ] Physical-device integration tests for PRoot, DNS and APT.
 - [ ] Integration and UI tests.
 - [x] CI debug APK artifacts.
-- [ ] Signed release workflow after signing secrets are configured.
+- [x] Verify and package an installable debug APK candidate with ABI check, signature verification, manifest and SHA-256.
+- [ ] Configure production signing secrets and a signed release workflow after physical-device and license gates.
 
 ## Completion policy
 
