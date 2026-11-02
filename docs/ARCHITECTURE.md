@@ -130,3 +130,17 @@ APT operations are built from a strict allowlist-style package-name validator; u
 `ProotPtySession` uses the ARM64 JNI bridge in `app/src/main/cpp/pty_bridge.cpp` to allocate a POSIX master/slave terminal pair, create a controlling session for the PRoot child and connect all three standard streams to the slave. The bridge exposes bounded window resizing, byte-oriented reads/writes and process-group signals. The native library is compiled for Android API 28+ by `scripts/prepare-proot-native.sh` and packaged as `libpixeldeskpty.so`.
 
 The runtime manager owns PTY and legacy pipe sessions through a shared lifecycle contract, so stop, Activity shutdown and backup exclusion apply to both. The terminal screen sends input through the PTY and exposes Ctrl+C. A VT/ANSI renderer is not included in this phase: full-screen programs that depend on cursor addressing, alternate screens or rich terminal attributes remain unsupported until that renderer is implemented and tested. The JNI process-spawn path and real PRoot interaction still require physical Pixel validation.
+
+
+## ANSI/VT terminal screen model
+
+The terminal UI consumes PTY bytes through a bounded in-memory screen model. It incrementally decodes UTF-8 across read boundaries and interprets common control characters, CSI cursor movement, erase/insert/delete/scroll commands, scroll regions, cursor visibility, alternate-screen switching and ANSI 16/256/true-color SGR attributes. Rendering is a Compose monospace cell grid; terminal input includes Enter, Tab, Escape and arrow-key sequences.
+
+This is a deliberately scoped VT subset, not a full xterm implementation. OSC hyperlinks, mouse reporting, bracketed paste, advanced keyboard protocols, Unicode grapheme width and every terminal mode are not implemented. Application compatibility must be validated individually on a physical device.
+
+
+## ANSI/VT terminal screen model
+
+The terminal UI consumes PTY bytes through a bounded in-memory screen model. It incrementally decodes UTF-8 across read boundaries and interprets common control characters, CSI cursor movement, erase/insert/delete/scroll commands, scroll regions, cursor visibility, alternate-screen switching and ANSI 16/256/true-color SGR attributes. Rendering is a Compose monospace cell grid; terminal input includes Enter, Tab, Escape and arrow-key sequences.
+
+This is a deliberately scoped VT subset, not a full xterm implementation. OSC metadata is ignored; OSC hyperlinks, mouse reporting, bracketed paste, advanced keyboard protocols, Unicode grapheme width and every terminal mode are not implemented. Application compatibility must be validated individually on a physical device.
