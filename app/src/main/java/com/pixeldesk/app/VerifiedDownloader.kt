@@ -97,7 +97,7 @@ object VerifiedDownloader {
                 }
             }
 
-            val actualDigest = digest.digest().joinToString("") { "%02x".format(it) }
+            val actualDigest = digest.digest().toHexString()
             check(actualDigest.equals(spec.sha256, ignoreCase = true)) {
                 "SHA-256 verification failed. The downloaded archive was discarded."
             }
@@ -113,3 +113,6 @@ object VerifiedDownloader {
         }
     }
 }
+
+internal fun ByteArray.toHexString(): String =
+    joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
