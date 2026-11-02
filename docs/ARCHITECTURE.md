@@ -118,3 +118,8 @@ APT operations are built from a strict allowlist-style package-name validator; u
 `WorkspaceStorage` manages named app-private workspace directories. Deletion validates the canonical parent and environment identifier, then uses `Files.walkFileTree` without following symbolic links. The UI requires explicit confirmation before deleting the rootfs, installed packages, home files and downloads.
 
 `EnvironmentRuntimeManager` keeps a single persistent shell process per environment, selects the most recently started environment for Terminal and Apps, and coordinates start/stop operations. The Activity stops all managed processes on destruction; the manager rejects new starts during shutdown and resumes when the Activity is recreated.
+
+
+## Environment backup and export
+
+`EnvironmentBackupExporter` streams the selected app-private workspace to a user-chosen Storage Access Framework destination as a TAR.GZ archive. The archive contains the complete workspace tree and a small format/version manifest. Regular files are streamed with bounded entry-count and expanded-size limits; directories and symbolic links are represented as TAR entries without following links. Relative symbolic links that resolve outside the workspace and special filesystem nodes are rejected. The SHA-256 digest covers the final compressed archive bytes. Export is disabled while that environment's PRoot session is running so the backup does not capture an actively changing rootfs.

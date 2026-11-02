@@ -34,6 +34,19 @@ object EnvironmentRuntimeManager {
             }
         }
 
+    /**
+     * Runs a blocking snapshot/export operation while holding the same lock
+     * used by start/stop. A new shell cannot start halfway through a backup.
+     */
+    suspend fun <T> withEnvironmentStopped(environmentId: String, operation: () -> T): T =
+        mutex.withLock {
+            check(!shuttingDown) { "PIXEL DESK is shutting down; retry after it resumes." }
+            check(sessions[environmentId]?.isAlive != true) {
+                "Stop the environment before creating a backup."
+            }
+            operation()
+        }
+
     suspend fun stop(environmentId: String): Boolean = mutex.withLock {
         val session = sessions.remove(environmentId)
         if (selectedId == environmentId) selectedId = null

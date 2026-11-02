@@ -232,6 +232,7 @@ private fun EnvironmentsScreen() {
     var isBusy by remember { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
     var pendingDelete by remember { mutableStateOf<EnvironmentWorkspace?>(null) }
+    var pendingExportWorkspace by remember { mutableStateOf<EnvironmentWorkspace?>(null) }
     val installedWorkspace = remember(workspaces, refresh) {
         workspaces.firstOrNull { workspace ->
             runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.isSuccess
@@ -243,7 +244,39 @@ private fun EnvironmentsScreen() {
         refresh++
     }
 
-    PageScaffold("Environments", "Manage local Debian workspaces and their runtime lifecycle.") {
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/gzip")
+    ) { uri ->
+        val workspaceToExport = pendingExportWorkspace
+        pendingExportWorkspace = null
+        if (uri == null) {
+            message = "Backup export cancelled."
+        } else if (workspaceToExport != null) {
+            scope.launch {
+                isBusy = true
+                message = "Creating a compressed backup of ${workspaceToExport.displayName}…"
+                val result = runCatching {
+                    withContext(Dispatchers.IO) {
+                        val stream = context.contentResolver.openOutputStream(uri)
+                            ?: error("Could not open the selected backup destination.")
+                        EnvironmentRuntimeManager.withEnvironmentStopped(workspaceToExport.id) {
+                            stream.use { output ->
+                                EnvironmentBackupExporter.export(workspaceToExport, output)
+                            }
+                        }
+                    }
+                }
+                result.onSuccess { backup ->
+                    message = "Backup saved · ${backup.entryCount} entries · ${backup.uncompressedBytes.toReadableSize()}\nSHA-256: ${backup.sha256}"
+                }.onFailure { error ->
+                    message = error.message ?: "Backup export failed. Remove any incomplete file and retry."
+                }
+                isBusy = false
+            }
+        }
+    }
+
+    PageScaffold("Environments", "Back up, start, stop and manage local Debian workspaces.") {
         FeatureCard(
             "Debian 12 Bookworm · ARM64",
             "Pinned official rootfs layer · HTTPS download · SHA-256 verification.",
@@ -322,6 +355,13 @@ private fun EnvironmentsScreen() {
                             },
                             enabled = !isBusy && valid
                         ) { Text(if (running) "Stop" else "Start") }
+                        TextButton(
+                            onClick = {
+                                pendingExportWorkspace = workspace
+                                exportLauncher.launch("${workspace.id}-backup.tar.gz")
+                            },
+                            enabled = !isBusy && !running && state != EnvironmentState.INSTALLING
+                        ) { Text("Export backup") }
                         TextButton(
                             onClick = { pendingDelete = workspace },
                             enabled = !isBusy && state != EnvironmentState.INSTALLING

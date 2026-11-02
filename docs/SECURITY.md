@@ -14,5 +14,7 @@
 - Keep the PRoot corresponding source and relinkable build inputs with the development APK; production redistribution remains blocked pending license review.
 - Do not run arbitrary plugin code.
 - Require explicit confirmation before environment deletion; validate canonical containment and never follow symlinks while deleting a workspace.
-- Provide environment backup/export controls with integrity checks before release.
+- Export environments only while stopped; stream to a user-selected SAF destination without requesting broad storage permissions.
+- Reject relative symbolic links that escape the workspace and special filesystem nodes during backup; never follow symbolic links while traversing the workspace.
+- Include a versioned backup manifest and report a SHA-256 digest of the complete compressed archive.
 - Do not claim sandboxing stronger than the actual PRoot/Android boundary.
