@@ -50,11 +50,14 @@ jobs:
       - name: Run Android lint
         run: gradle --no-daemon lint
 
-      - name: Upload debug APK
+      - name: Verify and package installable debug candidate
+        run: bash scripts/create-apk-manifest.sh app/build/outputs/apk/debug/app-debug.apk build/release-candidate
+
+      - name: Upload installable debug candidate and manifest
         uses: actions/upload-artifact@v4
         with:
-          name: pixeldesk-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: pixeldesk-installable-debug-candidate
+          path: build/release-candidate/
           if-no-files-found: error
 
       - name: Upload PRoot corresponding source and build inputs
