@@ -20,7 +20,7 @@ object AndroidDnsConfigurator {
         require(addresses.isNotEmpty()) { "At least one DNS server is required." }
         addresses.forEach { address ->
             val ipv4 = address.matches(Regex("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}")) &&
-                address.split('.').all { it.toIntOrNull() in 0..255 }
+                address.split('.').all { part -> part.toIntOrNull()?.let { it in 0..255 } == true }
             val ipv6 = address.contains(':') && address.matches(Regex("[0-9a-fA-F:]+"))
             require(ipv4 || ipv6) { "Invalid DNS server address." }
         }
