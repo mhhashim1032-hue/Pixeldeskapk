@@ -164,17 +164,22 @@ object SafeRootfsExtractor {
 
     private fun ensureSafeParent(root: Path, target: Path) {
         var parent = target.parent ?: error("Archive entry has no parent.")
+        val ancestors = mutableListOf<Path>()
         while (parent != root && parent.startsWith(root)) {
-            if (Files.exists(parent, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
-                require(Files.isDirectory(parent)) { "Archive path parent is not a directory." }
-                require(parent.toRealPath().startsWith(root)) {
-                    "Archive path resolves outside the extraction directory."
-                }
-            } else {
-                Files.createDirectory(parent)
-            }
+            ancestors += parent
             parent = parent.parent ?: break
         }
         require(parent == root) { "Archive path escapes the extraction directory." }
+
+        ancestors.asReversed().forEach { directory ->
+            if (Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                require(Files.isDirectory(directory)) { "Archive path parent is not a directory." }
+                require(directory.toRealPath().startsWith(root)) {
+                    "Archive path resolves outside the extraction directory."
+                }
+            } else {
+                Files.createDirectory(directory)
+            }
+        }
     }
 }
