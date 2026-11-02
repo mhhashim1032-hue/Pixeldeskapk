@@ -22,7 +22,7 @@ if [[ ! -d "$NDK" ]]; then
 fi
 
 rm -rf "$SOURCE_DIR" "$OUT_DIR" "$ARTIFACT_DIR"
-mkdir -p "$(dirname "$SOURCE_DIR")" "$JNI_DIR" "$ASSET_DIR/licenses" "$ASSET_DIR/third-party"
+install -d "$(dirname "$SOURCE_DIR")" "$JNI_DIR" "$ASSET_DIR/licenses" "$ASSET_DIR/third-party"
 rm -f "$JNI_DIR/libpixeldeskpty.so"
 
 git clone --no-checkout "$SOURCE_REPO" "$SOURCE_DIR"
