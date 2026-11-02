@@ -78,7 +78,7 @@ class ProotInteractiveSession private constructor(
                                 pending.delete(0, markerIndex)
                             }
                             val statusStart = marker.length
-                            val statusEnd = pending.indexOf("\\n", statusStart)
+                            val statusEnd = pending.indexOf("\n", statusStart)
                             if (statusEnd >= 0) {
                                 exitCode = pending.substring(statusStart, statusEnd).trim().toIntOrNull()
                                 return@withTimeoutOrNull true
