@@ -156,4 +156,6 @@ The initial backend review is recorded in `docs/DESKTOP_BACKEND_EVALUATION.md`. 
 Settings can detect the separately installed Android packages `com.termux` and `com.termux.x11` through Android package visibility queries. This is informational only: detecting both APKs does not verify the Termux companion package, a usable X11 socket, a signature-checked server launch path, or PRoot access to that socket. The app therefore does not launch a desktop session from this screen. Setup links open the official upstream release page only after an explicit user tap.
 
 
-The Settings diagnostic intentionally checks Android package visibility only. It does not claim that Termux's companion command is installed, that the X11 socket is reachable, or that a desktop session can be launched.
+## Linux application inventory
+
+The software manager scans standard Debian desktop-entry locations (`/usr/share/applications`, `/usr/local/share/applications` and the user's local applications directory) and reads only metadata keys from `.desktop` files. It filters hidden, NoDisplay and non-Application entries, requires an absolute desktop-file path and a non-empty Exec field, and displays a bounded list. The Exec string is metadata only; it is never evaluated or passed to a shell. GUI application launch remains disabled until a supported X11 backend and safe launch lifecycle are implemented and device-tested.
