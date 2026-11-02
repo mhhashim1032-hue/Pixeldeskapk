@@ -132,7 +132,7 @@ fun LinuxSoftwareScreen() {
                 Button(
                     onClick = {
                         runCatching { LinuxPackageManager.installOperation(packageNames) }
-                            .onSuccess(::runOperation)
+                            .onSuccess { operation -> runOperation(operation) }
                             .onFailure { output = it.message ?: "Invalid package names."; status = "INVALID INPUT" }
                     },
                     enabled = session != null && !running,
