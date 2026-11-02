@@ -2,7 +2,7 @@
 
 ## Status
 
-This is an isolated prototype track. No PRoot executable is bundled into the PIXEL DESK APK, and no Linux environment is advertised as working until device validation passes.
+A pinned Android ARM64 PRoot candidate is now built and included in development APK CI. The Settings screen has a native startup/version probe. This is not yet a working Linux environment: no distribution rootfs is installed, no guest shell has been validated, and no graphical desktop or Windows application can be launched yet.
 
 ## Candidate build
 
@@ -11,27 +11,39 @@ This is an isolated prototype track. No PRoot executable is bundled into the PIX
 - Target: Android ARM64 / `arm64-v8a`
 - Build toolchain: Android NDK `28.2.13676358`
 - Build entry point: `tools/build-static-aarch64.sh`
-- Expected outputs: `proot`, `loader`, and optionally `loader32`
+- Outputs: `proot`, `loader`, and `loader32`
 
-The workflow is deliberately separate from Android app CI. It produces a short-lived research artifact and retains the checked-out source and build output so the binary can be inspected. It checks the primary executable and loader ELF architecture, checks the primary PRoot executable has no dynamic `NEEDED` entries, and records SHA-256 checksums and source provenance.
+`scripts/prepare-proot-native.sh` rebuilds the pinned source, places the 64-bit PRoot executable and loader in `app/src/main/jniLibs/arm64-v8a/`, and embeds license notices plus the corresponding source and build intermediates in the APK assets. The 32-bit loader is retained in the corresponding-source archive but is not placed in the `arm64-v8a` ABI directory; 32-bit guest execution is not currently supported.
 
-## Licensing and provenance gates
+The APK uses legacy native-library packaging so Android extracts the native payload into `ApplicationInfo.nativeLibraryDir`. `ProotRuntimeProbe` checks the ARM64 ABI and payload files, then starts PRoot with an explicit `PROOT_LOADER` path and its `-V` version option. The process runs off the UI thread with a timeout and bounded output capture.
 
-The candidate source identifies itself as a Termux-patched PRoot copy. PRoot source files use GPL version 2 or (at the recipient's option) any later version. The bundled Talloc source includes LGPL-3.0 and GPL-3.0 license texts. Static linking creates additional LGPL compliance obligations; the workflow therefore retains source and intermediate build inputs for review. This research build is not approved for redistribution inside the app until a complete dependency/license audit and the applicable relinking/source requirements are satisfied.
+## Validation status
 
-A production build should prefer a maintained upstream source and a documented, reproducible dependency graph. Never replace this pinned source with an unpinned branch or download a prebuilt executable without verifying its origin and digest.
+- [x] Build static Android ARM64 PRoot with pinned source and NDK.
+- [x] Verify PRoot and loader ELF architecture and static linkage in the prototype workflow.
+- [x] Package native executable, loader, license notices and corresponding source/build inputs in development APKs.
+- [x] Add a bounded native startup/version probe and host-side unit tests.
+- [ ] Install the development APK on a physical Pixel device and verify the probe succeeds.
+- [ ] Install a pinned Debian ARM64 rootfs and run `/bin/sh -c 'uname -m'`.
+- [ ] Test process cancellation, app backgrounding, storage exhaustion and cleanup on-device.
+- [ ] Complete dependency/license review before any production release.
+
+## Licensing and provenance
+
+The candidate source identifies itself as a Termux-patched PRoot copy. PRoot source files use GPL version 2 or (at the recipient's option) any later version. The bundled Talloc source includes LGPL-3.0 and GPL-3.0 license texts. The APK includes these notices and a corresponding-source archive containing the pinned source tree and relinkable build inputs. The exact source revision and NDK version are recorded in the provenance file.
+
+The payload is currently for development/device validation only. Production redistribution remains blocked until the dependency inventory, source/relinking materials and all license obligations have been reviewed.
+
+Never replace the pinned source with an unpinned branch or download a prebuilt executable without verifying its origin and digest.
 
 ## Android integration gates
 
-Before adding binaries to `app/src/main/jniLibs/arm64-v8a/`:
-
-1. Verify the binary is ARM64 Android/Bionic-compatible and works on the minimum supported Android API.
-2. Determine the exact PRoot loader configuration and pass its absolute path explicitly.
-3. Confirm Android packaging extracts executable native payloads into `ApplicationInfo.nativeLibraryDir`; ordinary app-private workspace files are not assumed executable.
-4. Add native payloads only with their exact license notices and required corresponding source/relinkable inputs.
-5. Add an instrumentation test that launches `proot --version` and captures stdout, stderr and exit code.
-6. Test a minimal Debian ARM64 rootfs on a physical Pixel device, including `/bin/sh -c 'uname -m'`.
-7. Keep rootfs data under app-private storage and use PRoot link-to-symlink behaviour where required by Android filesystem restrictions.
+1. Verify the native startup probe succeeds on the target Pixel.
+2. Keep all rootfs, home and temporary paths inside app-private storage.
+3. Pass the loader path explicitly through `PROOT_LOADER`; do not rely on the build machine's embedded fallback path.
+4. Use PRoot link-to-symlink handling where required by Android filesystem restrictions.
+5. Do not advertise rootfs installation until the real ARM64 shell command succeeds.
+6. Do not advertise graphical desktop, Windows compatibility or virtualization until each has separate device validation.
 
 ## References
 
