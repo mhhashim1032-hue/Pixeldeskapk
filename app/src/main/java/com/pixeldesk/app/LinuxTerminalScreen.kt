@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,7 +43,7 @@ fun LinuxTerminalScreen() {
         }
     }
     var command by rememberSaveable { mutableStateOf("uname -a") }
-    var output by remember { mutableStateOf("PIXEL DESK terminal\\nInstall Debian ARM64 to begin.") }
+    var output by remember { mutableStateOf("PIXEL DESK terminal\nInstall Debian ARM64 to begin.") }
     var running by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("NOT CONNECTED") }
 
@@ -77,18 +76,18 @@ fun LinuxTerminalScreen() {
                         scope.launch {
                             running = true
                             status = "RUNNING"
-                            output = "$ " + command.trim() + "\\n"
+                            output = "$ " + command.trim() + "\n"
                             try {
                                 val result = ProotCommandRunner.run(context, selected, command.trim())
                                 output += result.stdout
-                                if (result.stderr.isNotBlank()) output += "\\n[stderr]\\n" + result.stderr
+                                if (result.stderr.isNotBlank()) output += "\n[stderr]\n" + result.stderr
                                 status = if (result.timedOut) "TIMED OUT"
                                     else if (result.success) "EXIT 0"
                                     else "EXIT " + (result.exitCode?.toString() ?: "ERROR")
-                                output += "\\n\\n" + status + " · " + result.durationMs + " ms"
+                                output += "\n\n" + status + " · " + result.durationMs + " ms"
                             } catch (error: Exception) {
                                 status = "ERROR"
-                                output += "\\n" + (error.message ?: "Command failed.")
+                                output += "\n" + (error.message ?: "Command failed.")
                             } finally {
                                 running = false
                             }
@@ -100,7 +99,7 @@ fun LinuxTerminalScreen() {
                     Text(if (running) "Running…" else "Run command")
                 }
                 TextButton(onClick = {
-                    output = "PIXEL DESK terminal\\nOutput cleared."
+                    output = "PIXEL DESK terminal\nOutput cleared."
                     status = if (workspace != null) "READY" else "NOT CONNECTED"
                 }) {
                     Text("Clear")
