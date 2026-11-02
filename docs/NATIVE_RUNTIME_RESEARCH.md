@@ -2,7 +2,7 @@
 
 ## Status
 
-A pinned Android ARM64 PRoot candidate is now built and included in development APK CI. The Settings screen has a native startup/version probe. This is not yet a working Linux environment: no distribution rootfs is installed, no guest shell has been validated, and no graphical desktop or Windows application can be launched yet.
+A pinned Android ARM64 PRoot candidate is built and included in development APK CI. The Settings screen has a native startup/version probe. The Environments screen can install a pinned Debian 12 Bookworm ARM64 rootfs, but no guest shell has yet been launched on a physical device; no graphical desktop or Windows application can be launched yet.
 
 ## Candidate build
 
@@ -24,7 +24,8 @@ The APK uses legacy native-library packaging so Android extracts the native payl
 - [x] Package native executable, loader, license notices and corresponding source/build inputs in development APKs.
 - [x] Add a bounded native startup/version probe and host-side unit tests.
 - [ ] Install the development APK on a physical Pixel device and verify the probe succeeds.
-- [ ] Install a pinned Debian ARM64 rootfs and run `/bin/sh -c 'uname -m'`.
+- [x] Add a pinned Debian 12 Bookworm ARM64 rootfs installer with digest and ELF validation.
+- [ ] Install the rootfs on a physical Pixel and run `/bin/sh -c 'uname -m'`.
 - [ ] Test process cancellation, app backgrounding, storage exhaustion and cleanup on-device.
 - [ ] Complete dependency/license review before any production release.
 
@@ -42,7 +43,7 @@ Never replace the pinned source with an unpinned branch or download a prebuilt e
 2. Keep all rootfs, home and temporary paths inside app-private storage.
 3. Pass the loader path explicitly through `PROOT_LOADER`; do not rely on the build machine's embedded fallback path.
 4. Use PRoot link-to-symlink handling where required by Android filesystem restrictions.
-5. Do not advertise rootfs installation until the real ARM64 shell command succeeds.
+5. Do not advertise guest command execution until the real ARM64 shell command succeeds.
 6. Do not advertise graphical desktop, Windows compatibility or virtualization until each has separate device validation.
 
 ## References

@@ -213,42 +213,66 @@ private fun FeatureCard(title: String, subtitle: String, status: String, accent:
 @Composable
 private fun EnvironmentsScreen() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var workspaces by remember { mutableStateOf(WorkspaceStorage.list(context)) }
-    var message by remember { mutableStateOf("No local workspace has been prepared yet.") }
+    var message by remember { mutableStateOf("Debian 12 ARM64 is ready to install.") }
+    var isInstalling by remember { mutableStateOf(false) }
+    val installedWorkspace = remember(workspaces) {
+        workspaces.firstOrNull { workspace ->
+            runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.isSuccess
+        }
+    }
 
-    PageScaffold("Environments", "Prepare local storage before installing a Linux userspace.") {
+    PageScaffold("Environments", "Install a verified Debian ARM64 userspace in private app storage.") {
         FeatureCard(
-            "Linux ARM64",
-            "Debian-based userspace is the first implementation target.",
-            if (workspaces.isEmpty()) "NEXT STEP" else "STORAGE READY",
-            Violet
+            "Debian 12 Bookworm · ARM64",
+            "Pinned official rootfs layer · HTTPS download · SHA-256 verification.",
+            if (installedWorkspace != null) "ROOTFS INSTALLED" else "READY TO INSTALL",
+            if (installedWorkspace != null) Cyan else Violet
         )
         Button(
             onClick = {
-                runCatching {
-                    WorkspaceStorage.create(context, "Debian ARM64")
-                }.onSuccess { workspace ->
-                    workspaces = WorkspaceStorage.list(context)
-                    message = "Workspace prepared at app-private storage: ${workspace.id}"
-                }.onFailure { error ->
-                    message = error.message ?: "Could not prepare workspace."
+                scope.launch {
+                    isInstalling = true
+                    message = "Downloading and verifying the pinned Debian rootfs (about 48 MB)…"
+                    try {
+                        val workspace = WorkspaceStorage.list(context)
+                            .firstOrNull { it.id == "debian-arm64" }
+                            ?: WorkspaceStorage.create(context, "Debian ARM64")
+                        val result = RootfsInstaller.install(workspace)
+                        workspaces = WorkspaceStorage.list(context)
+                        message = "Installed Debian ${result.validation.release} ARM64: ${result.extractedEntries} archive entries, ${result.expandedBytes.toReadableSize()} expanded. Shell execution is the next step."
+                    } catch (error: Exception) {
+                        message = error.message ?: "Debian installation failed."
+                    } finally {
+                        isInstalling = false
+                    }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isInstalling && installedWorkspace == null
         ) {
-            Text(if (workspaces.isEmpty()) "Prepare Debian workspace" else "Repair / prepare workspace")
+            Text(
+                when {
+                    isInstalling -> "Installing Debian…"
+                    installedWorkspace != null -> "Debian already installed"
+                    else -> "Install Debian 12 ARM64"
+                }
+            )
         }
         Text(message, color = Muted, fontSize = 12.sp)
         workspaces.forEach { workspace ->
+            val validation = runCatching { RootfsValidator.validate(workspace.rootFilesystem) }.getOrNull()
             FeatureCard(
                 workspace.displayName,
-                "Private storage folders are ready. Linux is not installed yet.",
-                "STORAGE ONLY",
-                Cyan
+                if (validation != null) "Debian ${validation.release} ${validation.architecture} root filesystem is installed."
+                else "Private workspace folders are ready; no Linux root filesystem is installed.",
+                if (validation != null) "ROOTFS INSTALLED" else "STORAGE ONLY",
+                if (validation != null) Cyan else Muted
             )
         }
-        FeatureCard("Windows compatibility", "Wine and translation layers; application compatibility varies.", "EXPERIMENTAL", Cyan)
-        FeatureCard("Virtual machines", "QEMU research; device support and performance are not yet verified.", "RESEARCH", Muted)
+        FeatureCard("Windows compatibility", "Wine and CPU translation remain experimental and are not enabled.", "EXPERIMENTAL", Cyan)
+        FeatureCard("Virtual machines", "QEMU feasibility research; device support and performance are not yet verified.", "RESEARCH", Muted)
     }
 }
 

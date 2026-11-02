@@ -16,8 +16,10 @@
 - [x] Pin and build a research PRoot ARM64 candidate with an Android NDK workflow.
 - [x] Package the candidate and corresponding source/build inputs in development APKs.
 - [ ] Complete license review and physical-device startup validation.
-- [x] Add bounded, staged TAR.GZ extraction with path and symlink checks.
-- [ ] Add a pinned rootfs catalog and verify a real distribution archive end-to-end.
+- [x] Add bounded, staged TAR.GZ extraction with path, symlink and hard-link checks.
+- [x] Add a pinned Debian 12 Bookworm ARM64 rootfs catalog with SHA-256 and size limits.
+- [x] Implement rootfs download, bounded extraction, Debian metadata and ARM64 ELF validation.
+- [ ] Verify the real rootfs download/extraction and first shell command on a physical Pixel.
 - [x] Implement download integrity verification (resumable downloads remain open).
 - [ ] Implement environment lifecycle: create, start, stop, delete.
 - [x] Add native PRoot startup/version probe with timeout and bounded output.

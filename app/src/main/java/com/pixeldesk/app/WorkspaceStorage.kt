@@ -2,6 +2,7 @@ package com.pixeldesk.app
 
 import android.content.Context
 import java.io.File
+import java.nio.file.Files
 import java.util.Locale
 
 /**
@@ -71,7 +72,7 @@ object WorkspaceStorage {
     fun list(context: Context): List<EnvironmentWorkspace> {
         val base = File(context.filesDir, "environments")
         val directories = base.listFiles()
-            ?.filter { it.isDirectory && validId.matches(it.name) }
+            ?.filter { it.isDirectory && !Files.isSymbolicLink(it.toPath()) && validId.matches(it.name) }
             .orEmpty()
 
         return directories.map { directory ->
