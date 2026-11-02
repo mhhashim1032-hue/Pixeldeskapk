@@ -87,14 +87,23 @@ class ProotInteractiveSession private constructor(
                     }
                 }
                 false
-            } ?: false
+            }
 
-            if (!completed) {
+            if (completed == null) {
                 close()
                 return@withLock InteractiveCommandResult(
                     command, null,
                     captured.toString() + pending.toString().take((MAX_OUTPUT_CHARS - captured.length).coerceAtLeast(0)),
                     elapsedMs(started), timedOut = true, sessionAlive = false
+                )
+            }
+            if (!completed) {
+                close()
+                return@withLock InteractiveCommandResult(
+                    command, null,
+                    captured.toString() + pending.toString().take((MAX_OUTPUT_CHARS - captured.length).coerceAtLeast(0)) +
+                        "\\nLinux shell exited before returning a command status.",
+                    elapsedMs(started), sessionAlive = false
                 )
             }
 
