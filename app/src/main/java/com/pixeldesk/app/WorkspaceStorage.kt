@@ -3,6 +3,10 @@ package com.pixeldesk.app
 import android.content.Context
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.FileVisitResult
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Locale
 
 /**
@@ -39,8 +43,12 @@ object WorkspaceStorage {
         require(validId.matches(id)) { "Environment name must contain letters or numbers." }
 
         val base = File(context.filesDir, "environments")
+        check(!Files.isSymbolicLink(base.toPath()) && (base.exists() || base.mkdirs())) {
+            "Unable to create a safe environments directory."
+        }
         val workspace = File(base, id)
-        check(workspace.canonicalFile.parentFile == base.canonicalFile) {
+        check(!Files.isSymbolicLink(workspace.toPath()) &&
+            workspace.canonicalFile.parentFile == base.canonicalFile) {
             "Invalid environment directory."
         }
         check(workspace.exists() || workspace.mkdirs()) {
@@ -87,4 +95,40 @@ object WorkspaceStorage {
             )
         }.sortedBy { it.displayName.lowercase(Locale.ROOT) }
     }
+    /**
+     * Deletes only the selected workspace below this app's environments directory.
+     * Files.walkFileTree does not follow symbolic links, so linked paths are unlinked
+     * rather than traversed.
+     */
+    fun delete(context: Context, workspace: EnvironmentWorkspace): Boolean {
+        val baseFile = File(context.filesDir, "environments")
+        require(!Files.isSymbolicLink(baseFile.toPath()) && baseFile.isDirectory) {
+            "The environments directory is missing or unsafe."
+        }
+        require(validId.matches(workspace.id)) { "Invalid environment identifier." }
+        require(!Files.isSymbolicLink(workspace.directory.toPath())) {
+            "Environment directory is a symbolic link."
+        }
+        val base = baseFile.canonicalFile
+        val target = workspace.directory.canonicalFile
+        require(target.parentFile == base && target.name == workspace.id && target != base) {
+            "Environment directory is outside the app-private environments folder."
+        }
+        if (!target.exists()) return false
+
+        Files.walkFileTree(target.toPath(), object : SimpleFileVisitor<Path>() {
+            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
+                Files.delete(file)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun postVisitDirectory(directory: Path, error: java.io.IOException?): FileVisitResult {
+                if (error != null) throw error
+                Files.delete(directory)
+                return FileVisitResult.CONTINUE
+            }
+        })
+        return true
+    }
+
 }
