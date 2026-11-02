@@ -30,6 +30,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -245,8 +247,85 @@ private fun EnvironmentsScreen() {
 
 @Composable
 private fun LibraryScreen() {
-    PageScaffold("Application library", "A single place for software installed in managed environments.") {
-        EmptyState(Icons.Rounded.Apps, "Your library is empty", "Install a supported application after an environment is available.")
+    val context = LocalContext.current
+    val workspace = remember { WorkspaceStorage.list(context).firstOrNull() }
+    var currentPath by rememberSaveable { mutableStateOf("") }
+    var itemName by rememberSaveable { mutableStateOf("") }
+    var refresh by remember { mutableIntStateOf(0) }
+    var message by remember { mutableStateOf("Create folders and text files inside this private workspace.") }
+    val entries = remember(workspace, currentPath, refresh) {
+        workspace?.let { runCatching { WorkspaceFiles.list(it.directory, currentPath) }.getOrDefault(emptyList()) }
+            .orEmpty()
+    }
+
+    PageScaffold("Workspace files", "Browse local files stored inside PIXEL DESK.") {
+        if (workspace == null) {
+            EmptyState(Icons.Rounded.Folder, "No workspace yet", "Prepare a Debian workspace in Environments first.")
+        } else {
+            Text("PRIVATE WORKSPACE  /  ${if (currentPath.isBlank()) "root" else currentPath}", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            if (currentPath.isNotBlank()) {
+                TextButton(onClick = {
+                    currentPath = currentPath.substringBeforeLast('/', "")
+                    message = "Opened parent folder."
+                }) { Text("← Parent folder") }
+            }
+            OutlinedTextField(
+                value = itemName,
+                onValueChange = { itemName = it },
+                label = { Text("New item name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    runCatching { WorkspaceFiles.createDirectory(workspace.directory, currentPath, itemName.trim()) }
+                        .onSuccess { itemName = ""; refresh++; message = "Folder created." }
+                        .onFailure { message = it.message ?: "Could not create folder." }
+                }, modifier = Modifier.weight(1f), enabled = itemName.isNotBlank()) { Text("New folder") }
+                Button(onClick = {
+                    runCatching { WorkspaceFiles.createTextFile(workspace.directory, currentPath, itemName.trim()) }
+                        .onSuccess { itemName = ""; refresh++; message = "Text file created." }
+                        .onFailure { message = it.message ?: "Could not create file." }
+                }, modifier = Modifier.weight(1f), enabled = itemName.isNotBlank()) { Text("New file") }
+            }
+            Text(message, color = Muted, fontSize = 11.sp)
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().height(260.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(entries.size) { index ->
+                    val entry = entries[index]
+                    Row(
+                        Modifier.fillMaxWidth()
+                            .background(Panel, RoundedCornerShape(12.dp))
+                            .clickable {
+                                if (entry.isDirectory) {
+                                    currentPath = entry.relativePath
+                                    message = "Opened ${entry.name}"
+                                } else {
+                                    message = runCatching {
+                                        WorkspaceFiles.readText(workspace.directory, entry.relativePath)
+                                    }.getOrElse { it.message ?: "Preview unavailable." }
+                                }
+                            }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            if (entry.isDirectory) Icons.Rounded.Folder else Icons.Rounded.Apps,
+                            contentDescription = null,
+                            tint = if (entry.isDirectory) Violet else Cyan
+                        )
+                        Spacer(Modifier.size(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(entry.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text(if (entry.isDirectory) "Folder" else entry.sizeBytes.toReadableSize(), color = Muted, fontSize = 10.sp)
+                        }
+                    }
+                }
+            }
+            Text("This is a basic workspace file browser, not a Linux filesystem yet.", color = Muted, fontSize = 10.sp)
+        }
     }
 }
 
