@@ -5,9 +5,14 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/** Common lifecycle contract for pipe-backed and PTY-backed guest sessions. */
+interface EnvironmentRuntimeSession : AutoCloseable {
+    val isAlive: Boolean
+}
+
 /** Owns one PRoot shell process per environment; screens borrow sessions. */
 object EnvironmentRuntimeManager {
-    private val sessions = ConcurrentHashMap<String, ProotInteractiveSession>()
+    private val sessions = ConcurrentHashMap<String, EnvironmentRuntimeSession>()
     private val mutex = Mutex()
     @Volatile private var shuttingDown = false
     @Volatile private var selectedId: String? = null
@@ -18,7 +23,7 @@ object EnvironmentRuntimeManager {
         mutex.withLock {
             check(!shuttingDown) { "PIXEL DESK is shutting down; retry after it resumes." }
             val existing = sessions[workspace.id]
-            if (existing?.isAlive == true) {
+            if (existing is ProotInteractiveSession && existing.isAlive) {
                 selectedId = workspace.id
                 return@withLock existing
             }
@@ -33,6 +38,30 @@ object EnvironmentRuntimeManager {
                 selectedId = workspace.id
             }
         }
+
+    suspend fun startPty(
+        context: Context,
+        workspace: EnvironmentWorkspace,
+        rows: Int = 32,
+        columns: Int = 100
+    ): ProotPtySession = mutex.withLock {
+        check(!shuttingDown) { "PIXEL DESK is shutting down; retry after it resumes." }
+        val existing = sessions[workspace.id]
+        if (existing is ProotPtySession && existing.isAlive) {
+            selectedId = workspace.id
+            return@withLock existing
+        }
+        existing?.close()
+        sessions.remove(workspace.id)
+        ProotPtySession.start(context, workspace, rows, columns).also { session ->
+            if (shuttingDown) {
+                session.close()
+                error("PIXEL DESK shut down while the environment was starting.")
+            }
+            sessions[workspace.id] = session
+            selectedId = workspace.id
+        }
+    }
 
     /**
      * Runs a blocking snapshot/export operation while holding the same lock

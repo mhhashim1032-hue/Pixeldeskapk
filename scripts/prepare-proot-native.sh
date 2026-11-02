@@ -23,6 +23,7 @@ fi
 
 rm -rf "$SOURCE_DIR" "$OUT_DIR" "$ARTIFACT_DIR"
 mkdir -p "$(dirname "$SOURCE_DIR")" "$JNI_DIR" "$ASSET_DIR/licenses" "$ASSET_DIR/third-party"
+rm -f "$JNI_DIR/libpixeldeskpty.so"
 
 git clone --no-checkout "$SOURCE_REPO" "$SOURCE_DIR"
 git -C "$SOURCE_DIR" checkout --detach "$SOURCE_COMMIT"
@@ -53,6 +54,16 @@ cp "$SOURCE_DIR/third_party/talloc-2.4.2/COPYING.GPL-3" "$ARTIFACT_DIR/TALLOC-GP
 
 cp "$ARTIFACT_DIR/proot" "$JNI_DIR/libproot.so"
 cp "$ARTIFACT_DIR/loader" "$JNI_DIR/libproot_loader.so"
+
+# Build the small JNI PTY bridge for the same ARM64 Android API floor as the app.
+TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
+CLANGXX="$TOOLCHAIN/bin/aarch64-linux-android28-clang++"
+test -x "$CLANGXX"
+"$CLANGXX" -std=c++17 -O2 -fPIC -shared \
+  -I "$TOOLCHAIN/sysroot/usr/include" \
+  "$ROOT_DIR/app/src/main/cpp/pty_bridge.cpp" \
+  -Wl,--no-undefined \
+  -o "$JNI_DIR/libpixeldeskpty.so"
 
 cp "$ARTIFACT_DIR/PRoot-COPYING" "$ASSET_DIR/licenses/PRoot-COPYING.txt"
 cp "$ARTIFACT_DIR/TALLOC-LGPL-3.0.txt" "$ASSET_DIR/licenses/TALLOC-LGPL-3.0.txt"

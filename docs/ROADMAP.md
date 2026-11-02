@@ -26,7 +26,7 @@
 - [x] Add bounded non-interactive PRoot command execution with exit code, stdout/stderr, timeout and cancellation handling.
 - [x] Add a persistent non-PTY shell with command history, reconnect and lifecycle cleanup.
 - [ ] Validate the persistent shell against the real Debian rootfs on a physical Pixel.
-- [ ] Add a real PTY for terminal control sequences, Ctrl+C and full-screen applications.
+- [x] Add an Android ARM64 POSIX PTY backend with byte I/O, terminal sizing, terminal echo/line discipline and process-group signals.\n- [ ] Add a VT/ANSI terminal renderer for cursor addressing, colors and full-screen applications.
 - [x] Configure guest DNS from Android active-network DNS servers.
 - [x] Add safe APT update, install, remove and cache-clean operations.
 - [x] Implement safe app-private workspace storage layout.
