@@ -29,7 +29,8 @@ The app downloads, verifies and extracts a pinned Debian 12 Bookworm ARM64 rootf
 
 ## Workspace storage and file operations
 
-- `WorkspaceStorage` creates app-private per-environment directories for a future root filesystem, home directory, downloads and temporary files.
+- `WorkspaceStorage` creates app-private per-environment directories for a root filesystem, home directory, downloads and temporary files, and deletes selected workspaces without following symbolic links.
+- `EnvironmentRuntimeManager` owns one persistent PRoot shell session per environment, lets the Terminal and Apps screens borrow the same session, tracks the selected environment, and stops sessions when the activity is destroyed.
 - `WorkspaceFiles` provides a deliberately small file API for listing, creating directories, creating text files, previewing small text files and deleting files or empty directories.
 - Every path is canonicalized and checked against the selected workspace root. Symbolic links that resolve outside the root are excluded from listings and rejected for reads/writes.
 - The Library screen is currently a workspace file browser. It is not a Linux shell and does not expose a mounted Linux root filesystem.
@@ -49,7 +50,7 @@ It is used by the Debian rootfs installer. The catalog pins source URL, version,
 
 The first target remains an ARM64 Debian userspace under PRoot on unrooted Android. PRoot-Distro is useful as a technical reference for rootless OCI/rootfs management, but it is a separate GPL-3.0 project and is not copied or bundled by this repository. PRoot itself and its Android-specific dependencies require a reproducible Android/NDK build and license review. A Termux binary cannot simply be assumed executable from another app's private sandbox.
 
-Before a real shell is enabled, the project must:
+Before the runtime can be declared validated on the target device, the project must:
 1. verify the native PRoot startup probe on the target Pixel;
 2. launch a minimal non-interactive command inside the installed rootfs and collect exit code/stdout/stderr;
 3. test process cancellation, app backgrounding, storage exhaustion and cleanup on a physical ARM64 device;
@@ -96,17 +97,24 @@ The APK build pipeline and PRoot source archive must remain paired for redistrib
 
 `RootfsCatalog` pins the Debian 12 Bookworm ARM64 OCI rootfs layer from a fixed `debuerreotype/docker-debian-artifacts` commit. `RootfsInstaller` downloads it through `VerifiedDownloader`, checks the pinned SHA-256, extracts it with bounded TAR.GZ handling, and validates `/etc/os-release`, `usr/bin/dpkg` and the ELF64 AArch64 machine type of a POSIX shell before reporting the rootfs installed.
 
-The installer runs on `Dispatchers.IO`, refuses to overwrite a non-empty rootfs, removes partial installations on failure/cancellation, and deletes the downloaded archive after installation. It does not yet launch a command in the guest rootfs.
+The installer runs on `Dispatchers.IO`, refuses to overwrite a non-empty rootfs, removes partial installations on failure/cancellation, and deletes the downloaded archive after installation. Shell execution is a separate runtime operation and still requires physical-device validation.
 
 
 ## Persistent shell adapter
 
 `ProotInteractiveSession` starts the validated guest shell through the native PRoot executable and keeps one process alive for sequential commands. It serializes commands, appends a unique exit-status marker, captures merged output with a fixed retained-output ceiling, and closes the session on timeout or cancellation. The adapter uses pipes rather than a PTY: terminal control sequences, full-screen applications, job control and true SIGINT delivery are not supported yet.
 
-The terminal screen owns the session lifecycle, records a bounded recent-command history, and exposes reconnect and stop controls. A session is closed when the screen leaves composition.
+The runtime manager owns the session lifecycle; screens borrow rather than destroy the session when navigation changes. The Terminal screen records bounded recent-command history and exposes reconnect and stop controls. Sessions are closed when explicitly stopped or when the Android activity is destroyed.
 
 ## Network and package management
 
 Android's `INTERNET` permission is used for rootfs and package downloads. `ACCESS_NETWORK_STATE` allows the app to read DNS servers from the active Android network and generate `/etc/resolv.conf` inside the app-private Debian rootfs. DNS configuration does not upload those addresses.
 
 APT operations are built from a strict allowlist-style package-name validator; user-entered shell fragments are never interpolated into package commands. Package installation still executes Debian package maintainer scripts in the PRoot environment, so packages and repositories remain untrusted inputs and PRoot must not be described as a hardened sandbox.
+
+
+## Environment lifecycle
+
+`WorkspaceStorage` manages named app-private workspace directories. Deletion validates the canonical parent and environment identifier, then uses `Files.walkFileTree` without following symbolic links. The UI requires explicit confirmation before deleting the rootfs, installed packages, home files and downloads.
+
+`EnvironmentRuntimeManager` keeps a single persistent shell process per environment, selects the most recently started environment for Terminal and Apps, and coordinates start/stop operations. The Activity stops all managed processes on destruction; the manager rejects new starts during shutdown and resumes when the Activity is recreated.
