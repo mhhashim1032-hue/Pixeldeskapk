@@ -6,9 +6,9 @@ PIXEL DESK targets ARM64 Android devices, with the Google Pixel 9 Pro XL as the 
 
 ## Current status
 
-The repository now contains the native Kotlin/Jetpack Compose application shell, device information cards, project documentation, unit-test starter, and GitHub Actions build workflows.
+The repository now contains a native Kotlin/Jetpack Compose app, a pinned Debian 12 Bookworm ARM64 rootfs installer, a bundled Android ARM64 PRoot candidate, runtime diagnostics, secure archive extraction and GitHub Actions build workflows.
 
-**The current app is a foundation build.** It does not yet install Linux distributions, launch desktop sessions, run Windows executables, or create virtual machines. Those capabilities are roadmap items and will be marked complete only after implementation and testing.
+**Current limitation:** the app can download, verify, extract and validate the Debian rootfs, and can probe PRoot startup. It has not yet launched a guest shell on a physical Pixel. Desktop sessions, Windows executables and virtual machines are not working features yet.
 
 ## Runtime roadmap
 
@@ -41,11 +41,11 @@ gradle lint
 
 ## Privacy and licensing
 
-The foundation app has no network permission and requires no account or cloud runtime. Environment files are intended to remain on-device by default. Third-party components will be reviewed for license and redistribution requirements before bundling.
+The app uses Android's INTERNET permission only to download the pinned Debian rootfs over HTTPS and verify its SHA-256 digest. It requires no account or cloud runtime, and does not send telemetry. Environment files remain in app-private storage by default. Third-party license review remains a gate before production redistribution.
 
 No repository-wide license has been selected yet. Do not assume this repository grants redistribution rights for third-party components.
 
 
 ## Native runtime status
 
-Development APK CI now builds a pinned Android ARM64 PRoot candidate and includes a Settings diagnostic to test whether the native executable starts. This is a runtime bootstrap probe only: Linux distributions are not yet installed, and no desktop session or Windows EXE execution is available. The APK also includes the corresponding PRoot source/build archive and third-party license notices.
+Development APK CI builds and packages a pinned Android ARM64 PRoot candidate, includes the corresponding source/build archive and license notices, and exposes a Settings diagnostic to test native startup. The Environments screen can install a pinned Debian 12 Bookworm ARM64 rootfs with SHA-256 verification, bounded extraction and ELF architecture validation. The guest shell has not yet been launched on-device; no desktop session or Windows EXE execution is available.
