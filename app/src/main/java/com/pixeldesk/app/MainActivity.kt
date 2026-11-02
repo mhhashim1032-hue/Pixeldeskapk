@@ -331,9 +331,21 @@ private fun LibraryScreen() {
 
 @Composable
 private fun SettingsScreen() {
-    PageScaffold("Settings", "PIXEL DESK preferences and diagnostics.") {
+    val context = LocalContext.current
+    val device = remember { DeviceSnapshot.read(context) }
+    PageScaffold("Settings", "PIXEL DESK preferences and device diagnostics.") {
         FeatureCard("Privacy first", "Environment files stay on-device by default.", "LOCAL", Cyan)
         FeatureCard("No root required", "The planned basic Linux environment targets unrooted Android.", "DESIGN", Violet)
+        Text("DEVICE COMPATIBILITY", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        InfoCard("PRIMARY ABI", device.primaryAbi, Modifier.fillMaxWidth())
+        FeatureCard(
+            "ARM64 runtime",
+            "Supported ABIs: ${device.supportedAbis.joinToString().ifBlank { "Unknown" }}",
+            if (device.supportsArm64) "ABI DETECTED" else "NOT SUPPORTED",
+            if (device.supportsArm64) Cyan else Muted
+        )
+        InfoCard("TOTAL RAM", device.totalRamBytes.toReadableSize(), Modifier.fillMaxWidth())
+        InfoCard("TOTAL DATA STORAGE", device.totalStorageBytes.toReadableSize(), Modifier.fillMaxWidth())
         FeatureCard("Compatibility", "Windows and VM support will be reported per device and application.", "HONEST STATUS", Muted)
     }
 }
