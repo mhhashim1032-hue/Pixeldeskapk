@@ -33,11 +33,11 @@ class ProotInteractiveSession private constructor(
     private val writer: OutputStreamWriter,
     private val output: Channel<String>,
     private val scope: CoroutineScope
-) : AutoCloseable {
+) : EnvironmentRuntimeSession {
     private val commandMutex = Mutex()
     @Volatile private var closed = false
 
-    val isAlive: Boolean get() = !closed && process.isAlive
+    override val isAlive: Boolean get() = !closed && process.isAlive
 
     suspend fun execute(command: String, timeoutMs: Long = DEFAULT_TIMEOUT_MS): InteractiveCommandResult =
         commandMutex.withLock {

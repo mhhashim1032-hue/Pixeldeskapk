@@ -123,3 +123,10 @@ APT operations are built from a strict allowlist-style package-name validator; u
 ## Environment backup and export
 
 `EnvironmentBackupExporter` streams the selected app-private workspace to a user-chosen Storage Access Framework destination as a TAR.GZ archive. The archive contains the complete workspace tree and a small format/version manifest. Regular files are streamed with bounded entry-count and expanded-size limits; directories and symbolic links are represented as TAR entries without following links. Relative symbolic links that resolve outside the workspace and special filesystem nodes are rejected. The SHA-256 digest covers the final compressed archive bytes. Export is disabled while that environment's PRoot session is running so the backup does not capture an actively changing rootfs.
+
+
+## PTY-backed Linux terminal
+
+`ProotPtySession` uses the ARM64 JNI bridge in `app/src/main/cpp/pty_bridge.cpp` to allocate a POSIX master/slave terminal pair, create a controlling session for the PRoot child and connect all three standard streams to the slave. The bridge exposes bounded window resizing, byte-oriented reads/writes and process-group signals. The native library is compiled for Android API 28+ by `scripts/prepare-proot-native.sh` and packaged as `libpixeldeskpty.so`.
+
+The runtime manager owns PTY and legacy pipe sessions through a shared lifecycle contract, so stop, Activity shutdown and backup exclusion apply to both. The terminal screen sends input through the PTY and exposes Ctrl+C. A VT/ANSI renderer is not included in this phase: full-screen programs that depend on cursor addressing, alternate screens or rich terminal attributes remain unsupported until that renderer is implemented and tested. The JNI process-spawn path and real PRoot interaction still require physical Pixel validation.

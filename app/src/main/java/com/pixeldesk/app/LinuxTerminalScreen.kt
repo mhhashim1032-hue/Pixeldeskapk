@@ -2,6 +2,7 @@ package com.pixeldesk.app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,14 +31,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
 fun LinuxTerminalScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
     val workspace = remember {
         val available = WorkspaceStorage.list(context).filter { candidate ->
             runCatching { RootfsValidator.validate(candidate.rootFilesystem) }.isSuccess
@@ -45,10 +50,9 @@ fun LinuxTerminalScreen() {
         val selectedId = EnvironmentRuntimeManager.selectedEnvironmentId()
         available.firstOrNull { it.id == selectedId } ?: available.firstOrNull()
     }
-    var session by remember { mutableStateOf<ProotInteractiveSession?>(null) }
-    var command by rememberSaveable { mutableStateOf("uname -m") }
-    var output by remember { mutableStateOf("PIXEL DESK terminal\nPreparing local Debian shell…") }
-    var running by remember { mutableStateOf(false) }
+    var session by remember { mutableStateOf<ProotPtySession?>(null) }
+    var command by rememberSaveable { mutableStateOf("") }
+    var output by remember { mutableStateOf("PIXEL DESK terminal\nStarting PTY-backed Debian shell…\n") }
     var status by remember { mutableStateOf("STARTING") }
     var history by rememberSaveable { mutableStateOf(emptyList<String>()) }
 
@@ -58,16 +62,33 @@ fun LinuxTerminalScreen() {
             output = "Install Debian 12 ARM64 from Environments before opening the terminal."
         } else {
             try {
-                session = EnvironmentRuntimeManager.start(context, workspace)
-                status = "CONNECTED"
-                output = "Connected to ${workspace.displayName}\nTry: uname -m"
+                session = EnvironmentRuntimeManager.startPty(context, workspace)
+                status = "CONNECTED · PTY"
             } catch (error: Exception) {
                 status = "CONNECTION ERROR"
-                output = error.message ?: "Could not start the Debian shell."
+                output = error.message ?: "Could not start the Debian PTY shell."
             }
         }
     }
 
+    LaunchedEffect(session) {
+        val active = session ?: return@LaunchedEffect
+        try {
+            while (active.isAlive) {
+                val bytes = active.readOutput() ?: break
+                output = (output + bytes.toString(Charsets.UTF_8)).takeLast(65_536)
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Session termination is reflected in the status below.
+        } finally {
+            if (session === active) {
+                status = "DISCONNECTED"
+                session = null
+            }
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF090B12)) {
         Column(
@@ -76,7 +97,7 @@ fun LinuxTerminalScreen() {
         ) {
             Spacer(Modifier.height(8.dp))
             Text("Linux Terminal", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-            Text("Persistent local Debian ARM64 shell", color = Color(0xFF9AA4B8), fontSize = 13.sp)
+            Text("Native POSIX PTY · Debian ARM64", color = Color(0xFF9AA4B8), fontSize = 13.sp)
             Text(
                 "${workspace?.displayName ?: "No verified Debian environment"} · $status",
                 color = if (session != null) Color(0xFF67DCE8) else Color(0xFF9AA4B8),
@@ -85,8 +106,8 @@ fun LinuxTerminalScreen() {
             OutlinedTextField(
                 value = command,
                 onValueChange = { command = it },
-                label = { Text("Linux command") },
-                placeholder = { Text("uname -m") },
+                label = { Text("Terminal input") },
+                placeholder = { Text("Type a command and press Send") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 1,
                 maxLines = 4
@@ -94,63 +115,55 @@ fun LinuxTerminalScreen() {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
-                        val activeSession = session ?: return@Button
-                        val submitted = command.trim()
-                        scope.launch {
-                            running = true
+                        val active = session ?: return@Button
+                        val submitted = command
+                        if (submitted.isNotEmpty()) {
+                            runCatching { active.writeText(submitted + "\n") }
+                                .onFailure { output += "\nInput error: ${it.message}" }
                             history = (history.filterNot { it == submitted } + submitted).takeLast(50)
-                            try {
-                                val result = activeSession.execute(submitted)
-                                val statusText = if (result.timedOut) "TIMED OUT"
-                                    else "EXIT ${result.exitCode ?: "UNKNOWN"}"
-                                val addition = "$ $submitted\n${result.output}\n$statusText · ${result.durationMs} ms\n"
-                                output = (output + "\n" + addition).takeLast(65_536)
-                                status = if (result.sessionAlive) "CONNECTED" else "DISCONNECTED"
-                                if (!result.sessionAlive) session = null
-                            } catch (error: Exception) {
-                                output = (output + "\n" + (error.message ?: "Command failed.")).takeLast(65_536)
-                                status = "COMMAND ERROR"
-                            } finally {
-                                running = false
+                            command = ""
+                        }
+                    },
+                    enabled = session != null && command.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
+                ) { Text("Send") }
+                TextButton(
+                    onClick = {
+                        val sent = session?.interrupt() == true
+                        if (!sent) output += "\nCould not send Ctrl+C to the PTY process group.\n"
+                    },
+                    enabled = session != null
+                ) { Text("Ctrl+C") }
+                TextButton(
+                    onClick = {
+                        workspace?.let { target ->
+                            scope.launch {
+                                EnvironmentRuntimeManager.stop(target.id)
+                                session = null
+                                status = "DISCONNECTED"
                             }
                         }
                     },
-                    enabled = session != null && !running && command.isNotBlank(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(if (running) "Running…" else "Run")
-                }
-                TextButton(
-                    onClick = {
-                        scope.launch {
-                            workspace?.let { EnvironmentRuntimeManager.stop(it.id) }
-                            session = null
-                            status = "DISCONNECTED"
-                        }
-                    },
-                    enabled = session != null && !running
+                    enabled = session != null
                 ) { Text("Stop") }
-                TextButton(onClick = {
-                    output = "PIXEL DESK terminal\nOutput cleared."
-                }) { Text("Clear") }
+                TextButton(onClick = { output = "" }) { Text("Clear") }
             }
-            if (session == null && workspace != null && !running) {
+            if (session == null && workspace != null) {
                 TextButton(onClick = {
                     scope.launch {
                         status = "CONNECTING"
                         try {
-                            session = EnvironmentRuntimeManager.start(context, workspace)
-                            status = "CONNECTED"
-                            output += "\nShell reconnected."
+                            session = EnvironmentRuntimeManager.startPty(context, workspace)
+                            status = "CONNECTED · PTY"
                         } catch (error: Exception) {
                             status = "CONNECTION ERROR"
                             output += "\n${error.message ?: "Could not reconnect."}"
                         }
                     }
-                }) { Text("Reconnect shell") }
+                }) { Text("Reconnect terminal") }
             }
             if (history.isNotEmpty()) {
-                Text("RECENT COMMANDS", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("RECENT INPUT", color = Color(0xFF9AA4B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 history.takeLast(5).asReversed().forEach { previous ->
                     TextButton(onClick = { command = previous }) {
                         Text(previous.take(72), fontFamily = FontFamily.Monospace, fontSize = 11.sp)
@@ -158,10 +171,15 @@ fun LinuxTerminalScreen() {
                 }
             }
             Text(status, color = Color(0xFF67DCE8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Column(
+            Box(
                 Modifier.fillMaxWidth()
-                    .height(320.dp)
+                    .height(360.dp)
                     .background(Color(0xFF05070C), RoundedCornerShape(16.dp))
+                    .onSizeChanged { size ->
+                        val widthDp = with(density) { size.width.toDp().value }
+                        val columns = (widthDp / 7.2f).toInt().coerceIn(20, 180)
+                        session?.resize(rows = 21, columns = columns)
+                    }
                     .verticalScroll(rememberScrollState())
                     .padding(14.dp)
             ) {
@@ -174,7 +192,7 @@ fun LinuxTerminalScreen() {
                 )
             }
             Text(
-                "Shell variables and working-directory changes persist between commands. This pipe-based terminal does not yet support full-screen interactive programs or job control.",
+                "The shell now receives a real PTY with terminal echo, line discipline, window sizing and process-group Ctrl+C. Full ANSI/VT screen rendering (for example vim, htop and ncurses apps) is a separate terminal-renderer milestone.",
                 color = Color(0xFF9AA4B8),
                 fontSize = 10.sp
             )
