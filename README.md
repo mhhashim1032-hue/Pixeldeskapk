@@ -60,3 +60,6 @@ Settings includes optional Termux / Termux:X11 package detection and a link to t
 
 
 The software manager can discover installed Linux desktop application entries and display their metadata. GUI launching is intentionally disabled until the external X11 backend and process lifecycle are implemented and validated.
+
+
+The software manager also provides a searchable inventory of installed Debian packages, including package versions, based on dpkg's installed status.

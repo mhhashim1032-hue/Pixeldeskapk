@@ -159,3 +159,8 @@ Settings can detect the separately installed Android packages `com.termux` and `
 ## Linux application inventory
 
 The software manager scans standard Debian desktop-entry locations (`/usr/share/applications`, `/usr/local/share/applications` and the user's local applications directory) and reads only metadata keys from `.desktop` files. It filters hidden, NoDisplay and non-Application entries, requires an absolute desktop-file path and a non-empty Exec field, and displays a bounded list. The Exec string is metadata only; it is never evaluated or passed to a shell. GUI application launch remains disabled until a supported X11 backend and safe launch lifecycle are implemented and device-tested.
+
+
+## Installed package inventory
+
+The software manager runs a read-only `dpkg-query` inventory and parses package name, version and dpkg status. Only rows whose status is exactly `installed` are shown; malformed rows and config-files-only packages are excluded. The UI provides a local name filter and caps the rendered list to 100 rows. This is separate from the desktop-entry application catalogue.

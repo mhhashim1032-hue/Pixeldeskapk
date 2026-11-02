@@ -55,6 +55,12 @@ object LinuxPackageManager {
         timeoutMs = 60_000L
     )
 
+    fun installedPackagesOperation() = PackageOperation(
+        title = "List installed Debian packages",
+        command = """dpkg-query -W -f='${'$'}{binary:Package}\t${'$'}{Version}\t${'$'}{db:Status-Status}\n' 2>/dev/null | sort -f""",
+        timeoutMs = 60_000L
+    )
+
     suspend fun run(
         session: ProotInteractiveSession,
         operation: PackageOperation

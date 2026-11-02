@@ -48,7 +48,7 @@
 ## M4 — Application library
 - [ ] Package install/uninstall flows within managed Linux environment.
 - [x] Add installed desktop-entry discovery and a filtered application inventory in the software manager.
-- [ ] Add full dpkg package inventory.
+- [x] Add searchable installed dpkg package inventory, filtered to packages with installed status.
 - [ ] Application discovery and launch.
 - [ ] Per-app compatibility metadata and logs.
 
