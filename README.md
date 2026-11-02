@@ -69,3 +69,8 @@ The application catalogue includes a safe executable-availability preflight. It 
 
 
 Security scope and remaining validation gates are documented in [the security model](docs/SECURITY_MODEL.md). PRoot is not a VM or a security boundary against malicious Linux applications.
+
+
+## Installable development APK
+
+A manual GitHub Actions workflow named **Installable APK candidate** builds, tests, lints and verifies an ARM64 debug APK, then uploads it with a SHA-256 checksum and candidate notes. Run it from the Actions tab using `workflow_dispatch`. The artifact is debug-signed for sideload testing only; it is not a production release. See [release readiness](docs/RELEASE_CHECKLIST.md).
