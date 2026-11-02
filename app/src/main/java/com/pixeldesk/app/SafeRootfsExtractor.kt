@@ -101,7 +101,27 @@ object SafeRootfsExtractor {
                             val safeLink = target.parent.relativize(resolvedLink)
                             Files.createSymbolicLink(target, safeLink)
                         }
-                        entry.isLink -> error("Hard links are not supported in rootfs archives.")
+                        entry.isLink -> {
+                            val source = resolveHardLinkTarget(root, entry.linkName)
+                            require(Files.isRegularFile(source, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                                "Hard-link target is missing or is not a regular file: ${entry.linkName}"
+                            }
+                            require(source.toRealPath().startsWith(root)) {
+                                "Hard-link target resolves outside the root filesystem."
+                            }
+                            val linkedBytes = Files.size(source)
+                            require(linkedBytes <= limits.maxSingleFileBytes) {
+                                "Hard-link target exceeds the per-file size limit."
+                            }
+                            expandedBytes = Math.addExact(expandedBytes, linkedBytes)
+                            require(expandedBytes <= limits.maxExpandedBytes) {
+                                "Archive exceeds the expanded size limit."
+                            }
+                            Files.copy(source, target)
+                            if (source.toFile().canExecute()) {
+                                target.toFile().setExecutable(true, false)
+                            }
+                        }
                         entry.isCharacterDevice || entry.isBlockDevice || entry.isFIFO ->
                             error("Special filesystem nodes are not allowed in rootfs archives.")
                         entry.isFile -> {
@@ -162,6 +182,25 @@ object SafeRootfsExtractor {
         return target
     }
 
+    private fun resolveHardLinkTarget(root: Path, linkName: String): Path {
+        require(linkName.isNotBlank()) { "Archive contains an empty hard-link target." }
+        val supplied = Paths.get(linkName)
+        val target = if (supplied.isAbsolute) {
+            root.resolve(supplied.toString().trimStart('/')).normalize()
+        } else {
+            root.resolve(supplied).normalize()
+        }
+        require(target != root && target.startsWith(root)) {
+            "Hard-link target escapes the extraction directory."
+        }
+        require(!target.any { it.toString() == ".." }) {
+            "Hard-link path traversal is not allowed."
+        }
+        require(Files.exists(target, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            "Hard-link target must appear earlier in the archive."
+        }
+        return target
+    }
     private fun ensureSafeParent(root: Path, target: Path) {
         var parent = target.parent ?: error("Archive entry has no parent.")
         val ancestors = mutableListOf<Path>()
