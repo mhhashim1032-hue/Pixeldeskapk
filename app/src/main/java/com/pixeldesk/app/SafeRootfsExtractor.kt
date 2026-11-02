@@ -35,9 +35,9 @@ data class RootfsExtractionResult(
  * Extracts a gzip-compressed TAR into a new directory.
  *
  * Extraction is staged and only promoted when every entry has been checked.
- * Absolute paths, parent traversal, escaping symlinks, hard links and special
- * filesystem nodes are rejected. Ownership, setuid/setgid bits and device
- * nodes are never restored.
+ * Absolute paths, parent traversal, escaping symlinks and special filesystem
+ * nodes are rejected. Hard links are materialized as bounded copies to avoid
+ * host-level inode aliasing. Ownership and privileged mode bits are not restored.
  */
 object SafeRootfsExtractor {
     fun extractTarGz(
@@ -57,6 +57,7 @@ object SafeRootfsExtractor {
 
         var entryCount = 0
         var expandedBytes = 0L
+        val executableFiles = mutableSetOf<Path>()
         val root = staging.toRealPath()
 
         try {
@@ -106,7 +107,8 @@ object SafeRootfsExtractor {
                             require(Files.isRegularFile(source, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
                                 "Hard-link target is missing or is not a regular file: ${entry.linkName}"
                             }
-                            require(source.toRealPath().startsWith(root)) {
+                            val sourceRealPath = source.toRealPath()
+                            require(sourceRealPath.startsWith(root)) {
                                 "Hard-link target resolves outside the root filesystem."
                             }
                             val linkedBytes = Files.size(source)
@@ -118,8 +120,9 @@ object SafeRootfsExtractor {
                                 "Archive exceeds the expanded size limit."
                             }
                             Files.copy(source, target)
-                            if (source.toFile().canExecute()) {
+                            if (executableFiles.contains(sourceRealPath)) {
                                 target.toFile().setExecutable(true, false)
+                                executableFiles.add(target.toRealPath())
                             }
                         }
                         entry.isCharacterDevice || entry.isBlockDevice || entry.isFIFO ->
@@ -151,6 +154,7 @@ object SafeRootfsExtractor {
                             }
                             if (entry.mode and 0b001001001 != 0) {
                                 target.toFile().setExecutable(true, false)
+                                executableFiles.add(target.toRealPath())
                             }
                         }
                         else -> error("Unsupported TAR entry type: ${entry.name}")
