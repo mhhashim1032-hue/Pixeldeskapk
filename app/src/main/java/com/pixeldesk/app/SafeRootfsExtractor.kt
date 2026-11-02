@@ -43,7 +43,8 @@ object SafeRootfsExtractor {
     fun extractTarGz(
         archive: File,
         destination: File,
-        limits: RootfsExtractionLimits = RootfsExtractionLimits()
+        limits: RootfsExtractionLimits = RootfsExtractionLimits(),
+        cancellationCheck: () -> Unit = {}
     ): RootfsExtractionResult {
         require(archive.isFile) { "Root filesystem archive does not exist." }
         val finalPath = destination.absoluteFile.toPath().normalize()
@@ -66,6 +67,7 @@ object SafeRootfsExtractor {
             ).use { tar ->
                 val buffer = ByteArray(64 * 1024)
                 while (true) {
+                    cancellationCheck()
                     val entry = tar.nextTarEntry ?: break
                     entryCount++
                     require(entryCount <= limits.maxEntries) {
@@ -139,6 +141,7 @@ object SafeRootfsExtractor {
                             FileOutputStream(target.toFile()).use { output ->
                                 var copied = 0L
                                 while (true) {
+                                    cancellationCheck()
                                     val count = tar.read(buffer)
                                     if (count < 0) break
                                     copied += count
